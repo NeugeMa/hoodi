@@ -1,2 +1,178 @@
-# hoodi-
-Seu "tamagotchi" de segurança! 
+# hoodi
+
+Seu "tamagotchi" de segurança!
+
+App mobile do **hoodi**, a CitizenTech da equipe na Global Solution 2026.2 da FIAP (Engenharia de Software, 3º ano). Este repositório contém **só o app mobile**, entregue na disciplina **Mobile Development & IoT**.
+
+## Ficha da CitizenTech
+
+| Campo | Resposta |
+|---|---|
+| Nome da CitizenTech | hoodi |
+| Cidade e bairro | São Paulo · entorno da FIAP Paulista (Paulista, Bela Vista e Liberdade) |
+| Cidadão beneficiado | Estudante do noturno, de 18 a 30 anos, que anda a pé da faculdade até o metrô ou até em casa |
+| Problema, em uma frase | Caminhar sozinho à noite é inseguro para a maioria, e tirar o celular do bolso na rua para checar o caminho é justamente o que a pessoa quer evitar |
+| Como funciona | O app guarda no celular a grade de risco feita com dados oficiais da SSP-SP, cruza a posição com a célula e a faixa horária e, quando o risco sobe, avisa pelo relógio (notificação) e pelo hoodi Pet (um bichinho de bolso que vibra e mostra uma carinha) |
+| O que cada parte faz | **App (este repositório):** a interface do cidadão. **API .NET:** domínio, contas, contatos e rotas. **ML:** grade de risco. **hoodi Pet (ESP32):** o alerta no bolso. **Infra Linux:** hospeda a API |
+| Link do repositório | https://github.com/NeugeMa/hoodi |
+| Indicador de impacto | A definir pela equipe |
+| ODS conectados | A definir pela equipe (sugestões do briefing: ODS 11 e ODS 10) |
+
+> Dados de risco: a grade com dados da SSP-SP ainda não está integrada. Até lá, as telas mostram os estados vazios (por exemplo, "Localizando você"), sem números inventados.
+
+## Como rodar
+
+Pré-requisitos: [Node.js](https://nodejs.org/) 20 ou mais novo e o app **Expo Go** no celular (Play Store ou App Store), compatível com o **SDK 58**.
+
+```bash
+npm install
+npx expo start
+```
+
+Leia o QR code com o Expo Go (Android) ou com a câmera (iPhone). O celular e o computador precisam estar na mesma rede Wi-Fi; se não conectar, use `npx expo start --tunnel`.
+
+Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Alert`) não aparecem no navegador; para testar os fluxos completos, use o celular.
+
+### Comandos úteis
+
+| Comando | O que faz |
+|---|---|
+| `npm run typecheck` | Confere os tipos do TypeScript |
+| `npm run lint` | Roda o ESLint |
+| `npx expo-doctor` | Confere versões e configuração do Expo |
+
+## Stack
+
+- **Expo SDK 58** com **React Native 0.88** e **TypeScript** (modo estrito)
+- **Expo Router**: navegação baseada em arquivos, em `src/app/`
+- **Plus Jakarta Sans** (`@expo-google-fonts/plus-jakarta-sans`): a fonte do design system
+- **Phosphor Icons** (`phosphor-react-native`) + **react-native-svg**: ícones com peso suave; peso "fill" na aba ativa. Todos os ícones são importados um a um em [`src/components/icones.ts`](src/components/icones.ts) para não carregar a biblioteca inteira
+- **expo-image**: logo
+
+## Estrutura de pastas
+
+```
+src/
+├── app/                    # Rotas (cada arquivo é uma tela)
+│   ├── _layout.tsx         # Raiz: fonte, tema claro/escuro e estado do trajeto
+│   └── (tabs)/             # Barra de navegação
+│       ├── _layout.tsx     # Início, Mapa, Histórico e Perfil
+│       ├── index.tsx       # Início
+│       ├── mapa.tsx        # Em produção
+│       ├── historico.tsx   # Em produção
+│       └── perfil.tsx      # Em produção
+├── components/
+│   ├── ui/                 # Peças genéricas do design system (texto, botão, cartão, hachura)
+│   ├── pet/                # Telinha animada do hoodi Pet
+│   └── inicio/             # Componentes da tela Início
+├── features/
+│   ├── pet/                # Carinhas em pixel art e seus quadros
+│   ├── risco/              # Níveis de risco: nomes, ícones e cores
+│   └── trajeto/            # Estado do trajeto, posição e canais de aviso
+└── theme/                  # Tokens do design system e hook de tema
+```
+
+Regra: só telas ficam em `src/app/`. Componentes, estado e dados ficam fora, para as rotas continuarem simples.
+
+## Design system
+
+O app segue o **design system v3** do hoodi. Os tokens estão em [`src/theme/tokens.ts`](src/theme/tokens.ts), com os mesmos nomes do PDF (`papel`, `grafite`, `capuz`, `seguro`, `atencao`…), para facilitar a conferência.
+
+Regras que o código já aplica:
+
+- **Tema claro e escuro** seguindo o sistema do celular.
+- **Vermelho é perigo:** o vermelho `capuz` aparece só no risco alto, na logo e no botão Pedir ajuda. O botão primário é grafite.
+- **Cor nunca sozinha:** todo nível de risco tem cor, ícone e nome (Área tranquila, Risco médio, Risco alto, Sem dado).
+- **Sem dado não é seguro:** "Sem dado" usa cinza e a carinha confusa, nunca verde nem sorriso, e diz isso em texto.
+- **Linguagem honesta:** nada de "rota segura", "local seguro" ou "tempo real".
+- **Ações que desligam algo pedem confirmação** (ex.: Encerrar trajeto).
+
+Regras visuais combinadas pela equipe (além do v3):
+
+- **Ícones Phosphor** em vez de Lucide.
+- **Sombra sutil e borda limpa** nos cards (token `sombra.suave` + borda de 1px em `linha`). **Nada de gradientes.**
+- **Micro-interações com Lottie**, com animações aprovadas antes de entrar.
+
+## Acessibilidade
+
+- Alvos de toque de pelo menos 48px; botões e barra de navegação com 56px.
+- Texto corrido com 16px no mínimo, respeitando o tamanho de fonte do sistema (limitado a 1,6× para não quebrar o layout).
+- Contraste mínimo de 4,5:1 em todo texto, nos dois temas (valores do design system).
+- Rótulos e dicas para leitor de tela (TalkBack e VoiceOver) em botões, indicadores e cards. O status atual é anunciado pelo nome do nível, sem depender da cor (F05 CA5).
+- Títulos marcados como cabeçalho para navegação por leitor de tela.
+
+## Telas e status
+
+As features seguem o QA no Azure Boards (v2). A produção do mobile está dividida entre duas pessoas da equipe.
+
+| Feature | Telas | Responsável | Status |
+|---|---|---|---|
+| F01 · Cadastro e acesso | Criar conta, Entrar | Colega | A fazer |
+| F02 · Boas-vindas e permissões | Permissões | Colega | A fazer |
+| F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | A fazer |
+| F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
+| F05 · Trajeto em andamento | **Início** | Mari | **Layout pronto, aguardando dados** |
+| F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | A fazer |
+| F07 · Alerta de risco | Alerta no Início, notificação, vibração do Pet | Mari | A fazer |
+| F08 · Perfil e privacidade | Perfil, Dados e privacidade | Colega | A fazer |
+| F09 · Contatos e pedido de ajuda | Contatos de segurança, Pedir ajuda | Colega | A fazer |
+| F10 · Histórico de alertas | Histórico | Mari | A fazer |
+
+### Início (F05)
+
+A telinha do hoodi Pet responde num relance como está onde você está; abaixo vêm o trajeto e, fixo no rodapé, o Pedir ajuda.
+
+- **Barra do topo:** logo, bairro atual (ou "Localizando…") e o botão do hoodi Pet com ponto de status (verde conectado, cinza desconectado). Tocar abre o pareamento.
+- **Saudação grande** e uma frase dizendo por onde os avisos chegam ("Avisos só na tela", "Avisos no relógio e no hoodi Pet"…).
+- **Card de status:** a carinha em pixel art (17 × 12), igual à tela OLED do Pet, animada por quadros, com a moldura na cor do nível; abaixo, "Onde você está agora", o nome do nível com selo de ícone e o motivo.
+- **Seu trajeto:** lista com tempo até o destino, alertas recebidos e próximo trecho de maior risco, e o link **Encerrar** (com confirmação). Sem trajeto, um card convida a **Comparar rotas**.
+- **Pedir ajuda:** fixo e sempre visível acima da barra de navegação, com a quantidade de contatos confirmados.
+
+| Situação | Carinha | Animação |
+|---|---|---|
+| Área tranquila | tranquila | sorri, respira e pisca |
+| Risco médio | atenta | olha para um lado e para o outro |
+| Risco alto | preocupada | sobrancelhas franzidas, treme |
+| Sem dado | confusa | boca ondulada e "?" (nunca sorri) |
+| Posição desconhecida | procurando | olha em volta com pontinhos carregando |
+
+Os desenhos ficam em [`src/features/pet/carinhas.ts`](src/features/pet/carinhas.ts) e a telinha em [`src/components/pet/tela-pet.tsx`](src/components/pet/tela-pet.tsx). Com "Reduzir movimento" ligado no celular, a carinha fica parada.
+
+#### Sem dados (estado atual)
+
+Enquanto GPS, grade de risco, conta e hoodi Pet não estão ligados, o Início abre como no primeiro uso: "Localizando…" na barra, saudação sem nome, "Avisos só na tela", carinha **procurando**, status **"Localizando você"**, o card **Nenhum trajeto agora** e o **Pedir ajuda**.
+
+#### Como os dados entram
+
+Todo o estado fica em [`src/features/trajeto/trajeto-context.tsx`](src/features/trajeto/trajeto-context.tsx). Cada integração chama uma função, e a tela se atualiza sozinha:
+
+| Função | Quem chama | O que muda no Início |
+|---|---|---|
+| `atualizarPosicao` | GPS + grade de risco (F03/F07) | Bairro, carinha, nível e motivo |
+| `iniciarTrajeto` | Comparar rotas (F04) | Lista do trajeto e link Encerrar |
+| `atualizarTrajeto` | Acompanhamento do trajeto (F05) | Tempo, alertas e próximo trecho |
+| `encerrarTrajeto` | Botão Encerrar trajeto | Volta ao estado sem trajeto |
+| `atualizarCanais` | Bluetooth do hoodi Pet (F06) e relógio | Frase dos avisos e botão do Pet |
+| `atualizarContatosConfirmados` | Contatos de segurança (F09) | Dica do Pedir ajuda |
+
+O nome de tratamento vai vir da conta (F01). Hoje está nulo em `NOME_USUARIO`, em [`src/app/(tabs)/index.tsx`](<src/app/(tabs)/index.tsx>).
+
+Telas que o Início abre e ainda não existem (Pedir ajuda, Parear hoodi Pet, Comparar rotas) mostram um aviso "em produção".
+
+## Como contribuir
+
+- Uma branch por tela ou feature, saindo da `main`: `feat/hoodi-<tela>` (ex.: `feat/hoodi-inicio`).
+- Abra um pull request para a `main` e peça revisão de quem cuida da outra metade.
+- Antes do PR, rode `npm run typecheck` e `npm run lint`.
+- Use os componentes de `src/components/ui` e os tokens de `src/theme` em vez de cores e tamanhos soltos.
+- Registre os prompts de IA usados em `prompts.md` (regra da GS).
+
+## Pendências
+
+- **Nome de tratamento:** o cadastro só pede e-mail e senha (QA v2), mas o Início cumprimenta pelo nome. O design system v3 já mostra o campo no Criar conta; falta confirmar com a API.
+- **Início sem trajeto:** o design system não desenha esse estado. Hoje ele mostra o status atual, Pedir ajuda e Comparar rotas.
+- **Início fora do design system v3:** a régua deu lugar à telinha do Pet, e os cards agora têm borda de 1px e sombra sutil (o v3 pede cards sem borda e sem sombra). Falta levar ao design system.
+- **Lottie:** as micro-interações vão usar Lottie (`lottie-react-native`), com animações do LottieFiles escolhidas e aprovadas antes de entrar.
+- **Ícone do app e splash:** ainda são os do template do Expo.
+- **Integrações:** GPS, grade de risco, API e Bluetooth com o hoodi Pet ainda não estão ligados; por isso o Início mostra só os estados vazios.
+- **"Localizando você":** estado novo para quando a posição ainda não é conhecida. Não existe no design system v3; falta validar com quem cuida do design.
