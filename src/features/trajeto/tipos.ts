@@ -1,3 +1,4 @@
+import type { Coordenada } from '@/features/grade/tipos';
 import type { NivelRisco } from '@/features/risco/nivel';
 
 /** Onde a pessoa está agora, cruzando a posição com a grade de risco. */
@@ -7,6 +8,10 @@ export type PosicaoAtual = {
   local: string;
   /** Motivo do nível, com números concretos. Vazio em "Sem dado". */
   motivo: string;
+  /** Onde a pessoa está (GPS). Fica só no aparelho. */
+  coordenada: Coordenada;
+  /** Célula da grade onde a pessoa está. Nulo = fora da área coberta (F03 CA9). */
+  celulaId: string | null;
 };
 
 export type ProximoTrecho = {
@@ -21,6 +26,8 @@ export type Trajeto = {
   alertasRecebidos: number;
   /** Nulo quando não há trecho de risco maior pela frente. */
   proximoTrecho: ProximoTrecho | null;
+  /** Pontos do caminho, em ordem (vêm do provedor de rotas). Desenhado colorido no Mapa. */
+  caminho: Coordenada[];
 };
 
 /** Canais de aviso (F05 CA2). */

@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Bell, Clock, Path, type Icon } from '@/components/icones';
 import { BlocoIcone } from '@/components/ui/bloco-icone';
 import { Botao } from '@/components/ui/botao';
-import { Cartao } from '@/components/ui/cartao';
 import { Texto } from '@/components/ui/texto';
 import { NIVEL } from '@/features/risco/nivel';
 import type { Trajeto } from '@/features/trajeto/tipos';
@@ -18,7 +17,7 @@ type Props = {
 };
 
 /**
- * Seção "Seu trajeto" do Início (F05 CA1).
+ * "Seu trajeto" dentro do painel do Início (F05 CA1), em linhas de lista sem cards.
  * Com trajeto: tempo até o destino, alertas e próximo trecho de maior risco.
  * Sem trajeto: convite para comparar rotas.
  */
@@ -55,7 +54,7 @@ function ListaTrajeto({ trajeto }: { trajeto: Trajeto }) {
   const alertas = trajeto.alertasRecebidos === 1 ? '1 alerta' : `${trajeto.alertasRecebidos} alertas`;
 
   return (
-    <Cartao style={styles.lista}>
+    <View>
       <Linha
         icone={Clock}
         rotulo={`Até ${trajeto.destino}`}
@@ -75,7 +74,7 @@ function ListaTrajeto({ trajeto }: { trajeto: Trajeto }) {
           ultima
         />
       ) : null}
-    </Cartao>
+    </View>
   );
 }
 
@@ -97,12 +96,8 @@ function Linha({ icone, rotulo, valor, a11y, corIcone, fundoIcone, corValor, ult
       accessible
       accessibilityLabel={a11y}
       style={[styles.linha, !ultima && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: cores.linha }]}>
-      <BlocoIcone
-        icone={icone}
-        fundo={cores[fundoIcone ?? 'papelRebaixado']}
-        cor={cores[corIcone ?? 'grafite']}
-      />
-      <View style={styles.textosLinha}>
+      <BlocoIcone icone={icone} fundo={cores[fundoIcone ?? 'papelRebaixado']} cor={cores[corIcone ?? 'grafite']} />
+      <View style={styles.textos}>
         <Texto variante="legenda" numberOfLines={1}>
           {rotulo}
         </Texto>
@@ -117,35 +112,26 @@ function Linha({ icone, rotulo, valor, a11y, corIcone, fundoIcone, corValor, ult
 function SemTrajeto({ onCompararRotas }: { onCompararRotas: () => void }) {
   const { cores } = useTema();
   return (
-    <Cartao style={styles.vazio}>
+    <View style={styles.vazio}>
       <View style={styles.vazioTopo}>
-        <BlocoIcone icone={Path} fundo={cores.papelRebaixado} cor={cores.grafite} tamanho={48} />
-        <View style={styles.textosLinha}>
+        <BlocoIcone icone={Path} fundo={cores.papelRebaixado} cor={cores.grafite} />
+        <View style={styles.textos}>
           <Texto variante="corpoForte">Nenhum trajeto agora</Texto>
-          <Texto variante="legenda">
-            Compare rotas até o destino e escolha a de menor risco registrado.
-          </Texto>
+          <Texto variante="legenda">Compare rotas e escolha a de menor risco registrado.</Texto>
         </View>
       </View>
-      <Botao rotulo="Comparar rotas" icone={Path} onPress={onCompararRotas} />
-    </Cartao>
+      <Botao rotulo="Comparar rotas" variante="secundario" icone={Path} onPress={onCompararRotas} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  secao: { gap: espaco[3] },
+  secao: { gap: espaco[2] },
   cabecalho: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   link: { minHeight: tamanho.toqueMin, justifyContent: 'center' },
   sublinhado: { textDecorationLine: 'underline' },
-  lista: { paddingVertical: espaco[1] },
-  linha: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: espaco[3],
-    paddingVertical: espaco[3],
-    minHeight: tamanho.toquePrincipal,
-  },
-  textosLinha: { flex: 1 },
-  vazio: { gap: espaco[4] },
+  linha: { flexDirection: 'row', alignItems: 'center', gap: espaco[3], paddingVertical: espaco[3] },
+  textos: { flex: 1 },
+  vazio: { gap: espaco[3] },
   vazioTopo: { flexDirection: 'row', gap: espaco[3], alignItems: 'center' },
 });

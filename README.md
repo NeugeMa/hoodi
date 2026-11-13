@@ -48,6 +48,9 @@ Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Ale
 - **Plus Jakarta Sans** (`@expo-google-fonts/plus-jakarta-sans`): a fonte do design system
 - **Phosphor Icons** (`phosphor-react-native`) + **react-native-svg**: ícones com peso suave; peso "fill" na aba ativa. Todos os ícones são importados um a um em [`src/components/icones.ts`](src/components/icones.ts) para não carregar a biblioteca inteira
 - **expo-image**: logo
+- **expo-sqlite**: banco local, guarda a grade de risco para funcionar sem internet
+- **expo-crypto**: SHA-256 para conferir o arquivo da grade antes de usar
+- **react-native-maps**: mapa nativo (Google Maps no Android, Apple Maps no iOS)
 
 ## Estrutura de pastas
 
@@ -64,8 +67,11 @@ src/
 ├── components/
 │   ├── ui/                 # Peças genéricas do design system (texto, botão, cartão, hachura)
 │   ├── pet/                # Telinha animada do hoodi Pet
-│   └── inicio/             # Componentes da tela Início
+│   ├── inicio/             # Componentes da tela Início
+│   ├── mapa/               # Mapa nativo, estilo cinza, painel e legenda
+│   └── risco/              # "Onde você está agora" e selo do nível (Início e Mapa)
 ├── features/
+│   ├── grade/              # Grade de risco: download, checksum, banco local e geometria
 │   ├── pet/                # Carinhas em pixel art e seus quadros
 │   ├── risco/              # Níveis de risco: nomes, ícones e cores
 │   └── trajeto/            # Estado do trajeto, posição e canais de aviso
@@ -109,7 +115,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 |---|---|---|---|
 | F01 · Cadastro e acesso | Criar conta, Entrar | Colega | A fazer |
 | F02 · Boas-vindas e permissões | Permissões | Colega | A fazer |
-| F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | A fazer |
+| F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | **Pronto, aguardando a grade da API** |
 | F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
 | F05 · Trajeto em andamento | **Início** | Mari | **Layout pronto, aguardando dados** |
 | F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | A fazer |
@@ -120,13 +126,13 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 
 ### Início (F05)
 
-A telinha do hoodi Pet responde num relance como está onde você está; abaixo vêm o trajeto e, fixo no rodapé, o Pedir ajuda.
+Mesmo estilo do Mapa: em cima, o que está acontecendo; embaixo, um painel arredondado com os detalhes e o Pedir ajuda.
 
-- **Barra do topo:** logo, bairro atual (ou "Localizando…") e o botão do hoodi Pet com ponto de status (verde conectado, cinza desconectado). Tocar abre o pareamento.
-- **Saudação grande** e uma frase dizendo por onde os avisos chegam ("Avisos só na tela", "Avisos no relógio e no hoodi Pet"…).
-- **Card de status:** a carinha em pixel art (17 × 12), igual à tela OLED do Pet, animada por quadros, com a moldura na cor do nível; abaixo, "Onde você está agora", o nome do nível com selo de ícone e o motivo.
-- **Seu trajeto:** lista com tempo até o destino, alertas recebidos e próximo trecho de maior risco, e o link **Encerrar** (com confirmação). Sem trajeto, um card convida a **Comparar rotas**.
-- **Pedir ajuda:** fixo e sempre visível acima da barra de navegação, com a quantidade de contatos confirmados.
+- **Chip do topo:** logo, saudação e bairro atual (ou "Localizando…").
+- **Telinha do hoodi Pet:** a carinha em pixel art (17 × 12), igual à tela OLED do Pet, animada por quadros, com a moldura na cor do nível.
+- **Canais de aviso (F05 CA2):** os indicadores **Relógio** e **hoodi Pet**, verdes quando conectados e cinza quando não (nunca vermelho). Sem Pet, o indicador mostra **Conectar** e abre o pareamento.
+- **Painel inferior:** "Onde você está agora" com o selo do nível, o bairro e o motivo (o mesmo bloco do Mapa); depois **Seu trajeto** em linhas de lista (tempo até o destino, alertas, próximo trecho de maior risco e **Encerrar**, com confirmação), ou o convite para **Comparar rotas**.
+- **Pedir ajuda:** fixo no rodapé do painel, sempre visível, com a quantidade de contatos confirmados.
 
 | Situação | Carinha | Animação |
 |---|---|---|
@@ -140,7 +146,7 @@ Os desenhos ficam em [`src/features/pet/carinhas.ts`](src/features/pet/carinhas.
 
 #### Sem dados (estado atual)
 
-Enquanto GPS, grade de risco, conta e hoodi Pet não estão ligados, o Início abre como no primeiro uso: "Localizando…" na barra, saudação sem nome, "Avisos só na tela", carinha **procurando**, status **"Localizando você"**, o card **Nenhum trajeto agora** e o **Pedir ajuda**.
+Enquanto GPS, grade de risco, conta e hoodi Pet não estão ligados, o Início abre como no primeiro uso: "Localizando…" no chip, saudação sem nome, carinha **procurando**, Relógio e hoodi Pet desconectados, "Localizando você" no painel, **Nenhum trajeto agora** e o **Pedir ajuda**.
 
 #### Como os dados entram
 
@@ -148,16 +154,69 @@ Todo o estado fica em [`src/features/trajeto/trajeto-context.tsx`](src/features/
 
 | Função | Quem chama | O que muda no Início |
 |---|---|---|
-| `atualizarPosicao` | GPS + grade de risco (F03/F07) | Bairro, carinha, nível e motivo |
-| `iniciarTrajeto` | Comparar rotas (F04) | Lista do trajeto e link Encerrar |
+| `atualizarPosicao` | GPS + grade de risco (F03/F07) | Bairro, carinha, nível e motivo; célula atual no Mapa (`celulaId`) |
+| `iniciarTrajeto` | Comparar rotas (F04) | Lista do trajeto e link Encerrar; caminho no Mapa (`caminho`) |
 | `atualizarTrajeto` | Acompanhamento do trajeto (F05) | Tempo, alertas e próximo trecho |
 | `encerrarTrajeto` | Botão Encerrar trajeto | Volta ao estado sem trajeto |
-| `atualizarCanais` | Bluetooth do hoodi Pet (F06) e relógio | Frase dos avisos e botão do Pet |
+| `atualizarCanais` | Bluetooth do hoodi Pet (F06) e relógio | Indicadores Relógio e hoodi Pet |
 | `atualizarContatosConfirmados` | Contatos de segurança (F09) | Dica do Pedir ajuda |
 
 O nome de tratamento vai vir da conta (F01). Hoje está nulo em `NOME_USUARIO`, em [`src/app/(tabs)/index.tsx`](<src/app/(tabs)/index.tsx>).
 
 Telas que o Início abre e ainda não existem (Pedir ajuda, Parear hoodi Pet, Comparar rotas) mostram um aviso "em produção".
+
+### Mapa (F03)
+
+Mapa real em tons de cinza com o risco por cima: a única cor na tela é a do risco.
+
+- **Células suaves** (verde, amarelo, vermelho; cinza em Sem dado) cobrindo as ruas. Tocar numa célula abre o detalhe no painel.
+- **Trajeto colorido trecho a trecho:** cada pedaço do caminho tem a cor da célula por onde passa.
+- **Você** como um ponto com halo e o botão para **centralizar** no lugar onde você está.
+- **Chip do topo:** "Mapa · Dados de 3 nov., 22h–2h".
+- **Painel inferior fixo:** "Onde você está agora" e a legenda; ao tocar numa célula, o **detalhe** com nível, rua, faixa horária, fonte SSP-SP, data e "Melhor dado disponível no período" (X para voltar).
+- **Mapa nativo:** `react-native-maps` (Google Maps no Android com estilo cinza; Apple Maps "muted" no iOS). Funciona no Expo Go sem configurar nada; no build de produção do Android vai precisar de uma chave do Google Maps. Na pré-visualização web o mapa não roda e aparece um aviso no lugar dele.
+
+| Situação | O que o Mapa mostra | QA |
+|---|---|---|
+| Com internet e versão nova | Baixa, confere o SHA-256, salva e mostra a data dos dados | F03 CA1 |
+| Sem internet, com dados salvos | Usa os dados salvos e avisa "Você está sem internet" com a data | CA6 |
+| Sem internet, nunca baixou | "Precisa de internet uma vez" com **Tentar de novo** | CA7 |
+| Arquivo com checksum errado | Recusa e continua com a versão anterior ("Atualização recusada") | CA8 |
+| Fora do perímetro | "O hoodi ainda não tem dados para este lugar", sem nível | CA9 |
+| Posição ainda desconhecida | "Localizando você", mapa centrado na FIAP Paulista | — |
+
+**Estado atual:** como a API ainda não existe, o Mapa mostra a cidade em cinza e, no painel, "Dados de risco indisponíveis" com **Tentar de novo**.
+
+#### Grade de risco: banco local e download
+
+- **Banco:** a última grade válida fica no **SQLite** do celular, tabela `grade_risco` ([`grade-repo.ts`](src/features/grade/grade-repo.ts)). Na pré-visualização web, o mesmo papel é do `localStorage` ([`grade-repo.web.ts`](src/features/grade/grade-repo.web.ts)).
+- **Download:** [`grade-api.ts`](src/features/grade/grade-api.ts) busca `GET /grade/manifesto.json` e, se a versão mudou, `GET /grade/{versao}.json`. O app só usa o arquivo se o SHA-256 do texto bater com o do manifesto.
+- **Endereço da API:** crie um arquivo `.env` na raiz com `EXPO_PUBLIC_API_URL=http://SEU-IP:PORTA` (no celular, use o IP da máquina, não `localhost`).
+
+Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nando):
+
+```json
+// GET /grade/manifesto.json
+{ "versao": "2026-11-03", "sha256": "<hex do arquivo da versão>" }
+
+// GET /grade/2026-11-03.json
+{
+  "versao": "2026-11-03",
+  "publicadoEm": "2026-11-03T12:00:00Z",
+  "fonte": "SSP-SP",
+  "faixas": [{ "id": "noite", "rotulo": "22h–2h", "inicio": 22, "fim": 2 }],
+  "celulas": [
+    {
+      "id": "6gycfqr",
+      "limites": { "norte": -23.5596, "sul": -23.5611, "oeste": -46.6572, "leste": -46.6557 },
+      "referencia": "Rua Augusta",
+      "niveis": { "noite": "alto" }
+    }
+  ]
+}
+```
+
+`limites` (latitude e longitude da célula) deixam o app desenhar a célula no mapa sem depender da escolha entre geohash e H3. O trajeto (F04) precisa mandar os pontos do caminho (`caminho: [{ latitude, longitude }]`) para o Mapa pintar cada trecho. Faixa ausente numa célula vale como **Sem dado**.
 
 ## Como contribuir
 

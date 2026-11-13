@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { GradeProvider } from '@/features/grade/grade-context';
 import { TrajetoProvider } from '@/features/trajeto/trajeto-context';
 import { useTema } from '@/theme/use-tema';
 
@@ -39,11 +40,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={tema}>
-      <TrajetoProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </TrajetoProvider>
+      <GradeProvider>
+        <TrajetoProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </TrajetoProvider>
+      </GradeProvider>
       <StatusBar style={escuro ? 'light' : 'dark'} />
     </ThemeProvider>
   );

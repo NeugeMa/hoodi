@@ -12,6 +12,8 @@ type MetaNivel = {
   icone: Icon;
   /** Cor de preenchimento (moldura, mapa). */
   cor: keyof Cores;
+  /** Cor de ícone e texto sobre o preenchimento. */
+  sobre: keyof Cores;
   /** Cor do texto do nível sobre papel-elevado. */
   texto: keyof Cores;
   /** Fundo suave do indicador. */
@@ -24,6 +26,7 @@ export const NIVEL: Record<NivelRisco, MetaNivel> = {
     curto: 'Tranquila',
     icone: ShieldCheck,
     cor: 'seguro',
+    sobre: 'sobreSeguro',
     texto: 'seguroTexto',
     fundo: 'seguroFundo',
   },
@@ -32,6 +35,7 @@ export const NIVEL: Record<NivelRisco, MetaNivel> = {
     curto: 'Médio',
     icone: WarningCircle,
     cor: 'atencao',
+    sobre: 'sobreAtencao',
     texto: 'atencaoTexto',
     fundo: 'atencaoFundo',
   },
@@ -40,6 +44,7 @@ export const NIVEL: Record<NivelRisco, MetaNivel> = {
     curto: 'Alto',
     icone: Warning,
     cor: 'capuz',
+    sobre: 'sobreCapuz',
     texto: 'perigoTexto',
     fundo: 'perigoFundo',
   },
@@ -48,6 +53,7 @@ export const NIVEL: Record<NivelRisco, MetaNivel> = {
     curto: 'Sem dado',
     icone: Question,
     cor: 'papelRebaixado',
+    sobre: 'grafiteSuave',
     texto: 'grafiteSuave',
     fundo: 'papelRebaixado',
   },
