@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Bluetooth, BluetoothSlash, Watch } from '@/components/icones';
@@ -11,8 +10,6 @@ import { espaco, raio, tamanho } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
 type Props = {
-  /** Nome de tratamento. Nulo enquanto a conta (F01) não fornece o nome. */
-  nome: string | null;
   nivel: NivelRisco | null;
   canais: Canais;
   onConectarPet: () => void;
@@ -20,41 +17,17 @@ type Props = {
   onConfigurarRelogio: () => void;
 };
 
-function saudacao(agora = new Date()) {
-  const h = agora.getHours();
-  if (h >= 5 && h < 12) return 'Bom dia';
-  if (h >= 12 && h < 18) return 'Boa tarde';
-  return 'Boa noite';
-}
-
 /**
- * Parte de cima do Início: logo e saudação, a telinha do hoodi Pet e os canais de aviso (F05 CA2).
- * O bairro fica no painel de baixo ("Onde você está agora"), para o topo ficar limpo.
+ * Parte de cima do Início: a telinha do hoodi Pet e os canais de aviso (F05 CA2).
+ * Sem título nem saudação; o bairro fica no painel de baixo ("Onde você está agora").
  */
-export function HeroiInicio({ nome, nivel, canais, onConectarPet, onConfigurarRelogio }: Props) {
-  const { cores, escuro } = useTema();
+export function HeroiInicio({ nivel, canais, onConectarPet, onConfigurarRelogio }: Props) {
+  const { cores } = useTema();
   const semCor = nivel === null || nivel === 'sem-dado';
   const corMoldura = semCor ? cores.grafiteApagado : cores[NIVEL[nivel].cor];
 
   return (
     <View style={styles.heroi}>
-      <View style={styles.saudacao}>
-        {/* Tema escuro usa a versão com contorno (regra de uso da logo). */}
-        <Image
-          source={
-            escuro
-              ? require('@/assets/images/logo-chapeuzinho-contorno.png')
-              : require('@/assets/images/logo-chapeuzinho.png')
-          }
-          style={styles.logo}
-          contentFit="contain"
-          accessible={false}
-        />
-        <Texto variante="subtitulo" accessibilityRole="header" numberOfLines={1} style={styles.encolhe}>
-          {nome ? `${saudacao()}, ${nome}` : saudacao()}
-        </Texto>
-      </View>
-
       <View style={styles.pet}>
         <TelaPet carinha={carinhaDoNivel(nivel)} corMoldura={corMoldura} />
       </View>
@@ -130,9 +103,6 @@ function Canal({ rotulo, conectado, Icone, a11y, acao, onPress }: CanalProps) {
 
 const styles = StyleSheet.create({
   heroi: { gap: espaco[4], alignItems: 'center' },
-  saudacao: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: espaco[2] },
-  logo: { width: 32, height: 32 },
-  encolhe: { flexShrink: 1 },
   pet: { width: '82%' },
   canais: { flexDirection: 'row', gap: espaco[2] },
   canal: {

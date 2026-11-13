@@ -10,6 +10,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { AvisoRisco } from '@/components/alerta/aviso-risco';
+import { AcompanhamentoProvider } from '@/features/alerta/acompanhamento-context';
 import { GradeProvider } from '@/features/grade/grade-context';
 import { PetProvider } from '@/features/pet/pet-context';
 import { TrajetoProvider } from '@/features/trajeto/trajeto-context';
@@ -44,12 +46,16 @@ export default function RootLayout() {
       <GradeProvider>
         <TrajetoProvider>
           <PetProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="pet/parear" />
-              <Stack.Screen name="pet/conectado" />
-              <Stack.Screen name="relogio" />
-            </Stack>
+            <AcompanhamentoProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="pet/parear" />
+                <Stack.Screen name="pet/conectado" />
+                <Stack.Screen name="relogio" />
+              </Stack>
+              {/* Alerta de risco por cima de qualquer tela (F07). */}
+              <AvisoRisco />
+            </AcompanhamentoProvider>
           </PetProvider>
         </TrajetoProvider>
       </GradeProvider>

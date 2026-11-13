@@ -26,10 +26,10 @@ Pré-requisitos: [Node.js](https://nodejs.org/) 20 ou mais novo e o app **Expo G
 
 ```bash
 npm install
-npx expo start
+npm start
 ```
 
-Leia o QR code com o Expo Go (Android) ou com a câmera (iPhone). O celular e o computador precisam estar na mesma rede Wi-Fi; se não conectar, use `npx expo start --tunnel`.
+`npm start` abre no **Expo Go** (equivale a `npx expo start --go`). Leia o QR code com o Expo Go (Android) ou com a câmera (iPhone). O celular e o computador precisam estar na mesma rede Wi-Fi; se não conectar, use `npx expo start --tunnel`.
 
 Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Alert`) não aparecem no navegador; para testar os fluxos completos, use o celular.
 
@@ -52,6 +52,8 @@ Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Ale
 - **expo-crypto**: SHA-256 para conferir o arquivo da grade antes de usar
 - **react-native-maps**: mapa nativo (Google Maps no Android, Apple Maps no iOS)
 - **react-native-ble-plx**: Bluetooth Low Energy com o hoodi Pet (não funciona no Expo Go)
+- **expo-location**: posição para o alerta de risco (só no aparelho)
+- **expo-notifications**: notificação do alerta, espelhada no relógio
 - **lottie-react-native**: micro-interações em Lottie (radar de busca do Pet)
 
 ## Estrutura de pastas
@@ -125,16 +127,16 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 | F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
 | F05 · Trajeto em andamento | **Início** | Mari | **Layout pronto, aguardando dados** |
 | F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | **Pronto** (Parear precisa de development build) |
-| F07 · Alerta de risco | Alerta no Início, notificação, vibração do Pet | Mari | A fazer |
+| F07 · Alerta de risco | Alerta na tela, notificação, vibração do Pet | Mari | **Pronto** (com o app aberto; segundo plano a fazer) |
 | F08 · Perfil e privacidade | Perfil, Dados e privacidade | Colega | A fazer |
 | F09 · Contatos e pedido de ajuda | Contatos de segurança, Pedir ajuda | Colega | A fazer |
-| F10 · Histórico de alertas | Histórico | Mari | **Pronto, aguardando os alertas (F07)** |
+| F10 · Histórico de alertas | Histórico | Mari | **Pronto** |
 
 ### Início (F05)
 
 Mesmo estilo do Mapa: em cima, o que está acontecendo; embaixo, um painel arredondado com os detalhes e o Pedir ajuda.
 
-- **Chip do topo:** logo, saudação e bairro atual (ou "Localizando…").
+- **Topo limpo:** sem título nem saudação; o Início começa pela telinha do Pet.
 - **Telinha do hoodi Pet:** a carinha em pixel art (17 × 12), igual à tela OLED do Pet, animada por quadros, com a moldura na cor do nível.
 - **Canais de aviso (F05 CA2):** os indicadores **Relógio** e **hoodi Pet**, verdes quando conectados e cinza quando não (nunca vermelho). Sem Pet, o indicador mostra **Conectar** e abre o pareamento.
 - **Painel inferior:** "Onde você está agora" com o selo do nível, o bairro e o motivo (o mesmo bloco do Mapa); depois **Seu trajeto** em linhas de lista (tempo até o destino, alertas, próximo trecho de maior risco e **Encerrar**, com confirmação), ou o convite para **Comparar rotas**.
@@ -152,7 +154,7 @@ Os desenhos ficam em [`src/features/pet/carinhas.ts`](src/features/pet/carinhas.
 
 #### Sem dados (estado atual)
 
-Enquanto GPS, grade de risco, conta e hoodi Pet não estão ligados, o Início abre como no primeiro uso: "Localizando…" no chip, saudação sem nome, carinha **procurando**, Relógio e hoodi Pet desconectados, "Localizando você" no painel, **Nenhum trajeto agora** e o **Pedir ajuda**.
+Enquanto GPS, grade de risco, conta e hoodi Pet não estão ligados, o Início abre como no primeiro uso: carinha **procurando**, Relógio e hoodi Pet desconectados, "Localizando você" no painel, **Nenhum trajeto agora** e o **Pedir ajuda**.
 
 #### Como os dados entram
 
@@ -166,8 +168,6 @@ Todo o estado fica em [`src/features/trajeto/trajeto-context.tsx`](src/features/
 | `encerrarTrajeto` | Botão Encerrar trajeto | Volta ao estado sem trajeto |
 | `atualizarCanais` | Bluetooth do hoodi Pet (F06) e relógio | Indicadores Relógio e hoodi Pet |
 | `atualizarContatosConfirmados` | Contatos de segurança (F09) | Dica do Pedir ajuda |
-
-O nome de tratamento vai vir da conta (F01). Hoje está nulo em `NOME_USUARIO`, em [`src/app/(tabs)/index.tsx`](<src/app/(tabs)/index.tsx>).
 
 Telas que o Início abre e ainda não existem (Pedir ajuda, Parear hoodi Pet, Comparar rotas) mostram um aviso "em produção".
 
@@ -259,7 +259,7 @@ Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nan
 
 1. Crie uma conta gratuita em [expo.dev](https://expo.dev) e entre com `npx eas-cli@latest login`.
 2. Gere o app instalável de desenvolvimento para Android: `npx eas-cli@latest build --profile development --platform android` (na primeira vez, o EAS cria o `eas.json`). O build roda na nuvem e devolve um link para instalar o APK.
-3. Instale o APK no celular Android e rode `npx expo start --dev-client`. O app instalado lê o QR code no lugar do Expo Go.
+3. Instale o APK no celular Android e rode `npm run start:dev`. O app instalado lê o QR code no lugar do Expo Go.
 
 No iPhone, o development build exige conta paga da Apple; por isso, o teste de Bluetooth da equipe é no Android.
 
@@ -270,6 +270,31 @@ No iPhone, o development build exige conta paga da Apple; por isso, o teste de B
 - **Concluí:** marca o relógio como canal de aviso; o indicador **Relógio** do Início fica verde. O app não consegue detectar o relógio, então vale a confirmação da pessoa.
 - **Fazer depois:** fecha sem ativar; o indicador **Relógio** mostra **Configurar** e reabre a tela. O Perfil (F08) pode abrir `/relogio` para rever os passos.
 - Fica salvo na tabela `preferencias` (`relogio_orientacao_vista` e `relogio_configurado`).
+
+### Alerta de risco (F07)
+
+O "motor" do app. Com a localização permitida e o app aberto, ele segue o GPS, descobre a célula na grade salva e atualiza o Início e o Mapa. **Durante um trajeto**, quando o nível sobe:
+
+1. **Aviso na tela**, por cima de qualquer aba (componente "Alerta de risco" do design system): Risco alto em vermelho com **Ver desvio**, fica até a pessoa agir ou sair da área (CA6); Risco médio em âmbar, some sozinho.
+2. **Notificação** do celular, que o **relógio espelha** (o app não fala direto com o relógio).
+3. **hoodi Pet** vibra e mostra a carinha do nível (comando `0x01` do protocolo).
+4. **Histórico:** o alerta é salvo na tabela `alertas`.
+5. O trajeto soma o alerta e recalcula o **próximo trecho de maior risco** pelo caminho.
+
+| Regra | Como o app faz | QA |
+|---|---|---|
+| Alerta só quando o nível sobe | Compara com o último nível com dado | CA1, CA2 |
+| Intervalo mínimo | 2 minutos entre dois alertas | CA3 |
+| Divisa entre células | Só troca de célula depois de entrar 30 m na nova | CA4 |
+| Sem dado | Nunca alerta e não conta como nível conhecido | CA5 |
+| Texto | o quê + onde + o que fazer, sem "!" | CA7 |
+| Sem trajeto | Não alerta | F05 CA4 |
+
+A lógica fica em [`src/features/alerta/motor.ts`](src/features/alerta/motor.ts), separada da tela, e foi testada com os cenários do QA (TC26, TC37, intervalo, divisa, fora da área). O acompanhamento fica em [`acompanhamento-context.tsx`](src/features/alerta/acompanhamento-context.tsx).
+
+**Localização:** o Início mostra **Permitir localização**, explicando o motivo antes do pedido do sistema. Se a pessoa negou, o botão abre as configurações. A posição fica só no aparelho.
+
+**Limitação:** o acompanhamento roda com o app aberto. Seguir o trajeto com a tela bloqueada (F05 CA3) exige localização em segundo plano, que só funciona no development build; fica como próximo passo.
 
 ### Histórico (F10)
 
@@ -305,7 +330,6 @@ Tudo fica só no aparelho. Na pré-visualização web, que não tem SQLite, os r
 
 ## Pendências
 
-- **Nome de tratamento:** o cadastro só pede e-mail e senha (QA v2), mas o Início cumprimenta pelo nome. O design system v3 já mostra o campo no Criar conta; falta confirmar com a API.
 - **Início sem trajeto:** o design system não desenha esse estado. Hoje ele mostra o status atual, Pedir ajuda e Comparar rotas.
 - **Início fora do design system v3:** a régua deu lugar à telinha do Pet, e os cards agora têm borda de 1px e sombra sutil (o v3 pede cards sem borda e sem sombra). Falta levar ao design system.
 - **Ícone do app e splash:** ainda são os do template do Expo.

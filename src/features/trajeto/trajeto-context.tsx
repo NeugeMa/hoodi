@@ -21,6 +21,8 @@ type TrajetoContexto = {
   iniciarTrajeto: (trajeto: Trajeto) => void;
   /** Acompanhamento do trajeto atualiza tempo, alertas e próximo trecho (F05). */
   atualizarTrajeto: (trajeto: Trajeto) => void;
+  /** Muda só alguns campos do trajeto em andamento (alertas, próximo trecho...). */
+  ajustarTrajeto: (mudar: (atual: Trajeto) => Partial<Trajeto>) => void;
   /** F05 CA4: para o acompanhamento e os canais deixam de receber alertas. */
   encerrarTrajeto: () => void;
   /** Bluetooth com o hoodi Pet (F06). */
@@ -58,6 +60,10 @@ export function TrajetoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const encerrarTrajeto = useCallback(() => setTrajeto(null), []);
+  const ajustarTrajeto = useCallback(
+    (mudar: (atual: Trajeto) => Partial<Trajeto>) => setTrajeto((t) => (t ? { ...t, ...mudar(t) } : t)),
+    [],
+  );
   const atualizarCanais = useCallback(
     (parcial: Partial<Canais>) => setCanais((atual) => ({ ...atual, ...parcial })),
     [],
@@ -76,12 +82,13 @@ export function TrajetoProvider({ children }: { children: ReactNode }) {
       atualizarPosicao: setPosicao,
       iniciarTrajeto: setTrajeto,
       atualizarTrajeto: setTrajeto,
+      ajustarTrajeto,
       encerrarTrajeto,
       atualizarCanais,
       definirRelogio,
       atualizarContatosConfirmados: setContatosConfirmados,
     }),
-    [posicao, trajeto, canais, contatosConfirmados, encerrarTrajeto, atualizarCanais, definirRelogio],
+    [posicao, trajeto, canais, contatosConfirmados, ajustarTrajeto, encerrarTrajeto, atualizarCanais, definirRelogio],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

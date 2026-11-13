@@ -1,22 +1,22 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { AccessibilityInfo, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BotaoPedirAjuda } from '@/components/inicio/botao-pedir-ajuda';
 import { HeroiInicio } from '@/components/inicio/heroi-inicio';
 import { SecaoTrajeto } from '@/components/inicio/secao-trajeto';
+import { MapPin } from '@/components/icones';
 import { OndeEstou } from '@/components/risco/onde-estou';
+import { Aviso } from '@/components/ui/aviso';
 import { Texto } from '@/components/ui/texto';
+import { useAcompanhamento } from '@/features/alerta/acompanhamento-context';
 import { usePet } from '@/features/pet/pet-context';
 import { lerPreferencia, PREF } from '@/features/preferencias/preferencias-repo';
 import { explicacaoDaPosicao } from '@/features/trajeto/textos';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio, sombra } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
-
-/** Nome de tratamento: virá da conta (F01). Nulo até lá. */
-const NOME_USUARIO: string | null = null;
 
 function textoContatos(n: number) {
   if (n === 0) return 'Você ainda não tem contatos confirmados.';
@@ -33,6 +33,7 @@ export default function InicioScreen() {
   const insets = useSafeAreaInsets();
   const { posicao, trajeto, canais, contatosConfirmados, encerrarTrajeto } = useTrajeto();
   const petPareado = !!usePet().pareado;
+  const { permissao, pedirLocalizacao } = useAcompanhamento();
 
   // Primeiro acesso: mostra a orientação do relógio uma vez (F06 CA1, CA2).
   // Quando as Permissões (F02) existirem, elas abrem esta tela logo depois.
@@ -75,7 +76,6 @@ export default function InicioScreen() {
     <View style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
       <View style={styles.topo}>
         <HeroiInicio
-          nome={NOME_USUARIO}
           nivel={nivel}
           canais={canais}
           onConectarPet={() => router.push(petPareado ? '/pet/conectado' : '/pet/parear')}
@@ -88,6 +88,18 @@ export default function InicioScreen() {
         <View style={[styles.alca, { backgroundColor: cores.linha }]} />
         <ScrollView contentContainerStyle={styles.conteudoPainel} showsVerticalScrollIndicator={false}>
           <OndeEstou nivel={nivel} local={posicao?.local ?? null} explicacao={explicacaoDaPosicao(posicao)} />
+          {permissao !== 'concedida' ? (
+            <Aviso
+              icone={MapPin}
+              titulo={permissao === 'negada' ? 'Localização desligada' : 'Permita a localização'}
+              texto="O hoodi usa sua posição só no aparelho, para mostrar o risco onde você está e avisar quando ele sobe."
+              acao={
+                permissao === 'negada'
+                  ? { rotulo: 'Abrir configurações', onPress: () => Linking.openSettings() }
+                  : { rotulo: 'Permitir localização', onPress: pedirLocalizacao }
+              }
+            />
+          ) : null}
           <View style={[styles.divisor, { backgroundColor: cores.linha }]} />
           <SecaoTrajeto
             trajeto={trajeto}

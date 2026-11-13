@@ -41,7 +41,14 @@
           "neverForLocation": true,
           "bluetoothAlwaysPermission": "O hoodi usa o Bluetooth para conectar ao hoodi Pet e mandar os avisos de risco para ele."
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O hoodi usa sua localização, só no aparelho, para dizer o risco registrado onde você está e avisar quando ele sobe."
+        }
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
