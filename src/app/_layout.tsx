@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { GradeProvider } from '@/features/grade/grade-context';
+import { PetProvider } from '@/features/pet/pet-context';
 import { TrajetoProvider } from '@/features/trajeto/trajeto-context';
 import { useTema } from '@/theme/use-tema';
 
@@ -42,9 +43,14 @@ export default function RootLayout() {
     <ThemeProvider value={tema}>
       <GradeProvider>
         <TrajetoProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-          </Stack>
+          <PetProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="pet/parear" />
+              <Stack.Screen name="pet/conectado" />
+              <Stack.Screen name="relogio" />
+            </Stack>
+          </PetProvider>
         </TrajetoProvider>
       </GradeProvider>
       <StatusBar style={escuro ? 'light' : 'dark'} />

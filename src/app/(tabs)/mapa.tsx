@@ -16,7 +16,7 @@ import { CENTRO_PERIMETRO, faixaAtual, nivelNaFaixa } from '@/features/grade/rec
 import type { CelulaGrade } from '@/features/grade/tipos';
 import { explicacaoDaPosicao } from '@/features/trajeto/textos';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
-import { espaco, raio, sombra } from '@/theme/tokens';
+import { espaco } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
 /** Textos quando ainda não há nenhuma grade salva no aparelho. */
@@ -87,23 +87,8 @@ export default function MapaScreen() {
         selecionadaId={selecionada?.id ?? null}
         onSelecionar={setSelecionada}
         margemInferior={alturaPainel}
-        margemSuperior={topo + 48}
+        margemSuperior={topo}
       />
-
-      {/* Título e data flutuando sobre o mapa. */}
-      <View style={[styles.cabecalho, { top: topo }]} pointerEvents="box-none">
-        <View style={[styles.chip, sombra.suave, { backgroundColor: cores.papelElevado, borderColor: cores.linha }]}>
-          <Texto variante="subtitulo" accessibilityRole="header">
-            Mapa
-          </Texto>
-          {grade ? (
-            <Texto variante="legenda">
-              · Dados de {diaMes(grade.publicadoEm)}
-              {faixa ? `, ${faixa.rotulo}` : ''}
-            </Texto>
-          ) : null}
-        </View>
-      </View>
 
       <PainelMapa avisos={avisos} onAltura={setAlturaPainel}>
         {!grade ? (
@@ -134,7 +119,10 @@ export default function MapaScreen() {
               explicacao={explicacaoDaPosicao(posicao)}
             />
             <LegendaMapa />
-            <Texto variante="legenda">Toque numa área colorida para ver o detalhe.</Texto>
+            <Texto variante="legenda">
+              Dados de {diaMes(grade.publicadoEm)}
+              {faixa ? `, faixa de ${faixa.rotulo}` : ''}. Toque numa área colorida para ver o detalhe.
+            </Texto>
           </>
         )}
       </PainelMapa>
@@ -144,14 +132,4 @@ export default function MapaScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1 },
-  cabecalho: { position: 'absolute', left: espaco[4], right: espaco[4], flexDirection: 'row' },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: espaco[1],
-    paddingHorizontal: espaco[4],
-    paddingVertical: espaco[2],
-    borderRadius: raio.total,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
 });

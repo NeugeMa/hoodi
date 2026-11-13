@@ -1,4 +1,6 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+
+import { lerPreferencia, PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 
 import type { Canais, PosicaoAtual, Trajeto } from './tipos';
 
@@ -12,6 +14,7 @@ type TrajetoContexto = {
   contatosConfirmados: number;
 
   // Pontos de entrada para as integrações. Quem tiver o dado chama a função.
+  // Todas são estáveis (mesma referência entre renderizações).
   /** GPS + grade de risco (F03/F07). */
   atualizarPosicao: (posicao: PosicaoAtual | null) => void;
   /** Comparar rotas (F04 CA6) inicia o trajeto. */
@@ -20,8 +23,10 @@ type TrajetoContexto = {
   atualizarTrajeto: (trajeto: Trajeto) => void;
   /** F05 CA4: para o acompanhamento e os canais deixam de receber alertas. */
   encerrarTrajeto: () => void;
-  /** Bluetooth com o hoodi Pet (F06) e notificações do relógio. */
+  /** Bluetooth com o hoodi Pet (F06). */
   atualizarCanais: (canais: Partial<Canais>) => void;
+  /** Orientação do relógio (F06): a pessoa confirmou ou desfez a configuração. Fica salvo. */
+  definirRelogio: (configurado: boolean) => Promise<void>;
   /** Contatos de segurança (F09). */
   atualizarContatosConfirmados: (quantidade: number) => void;
 };
@@ -41,6 +46,27 @@ export function TrajetoProvider({ children }: { children: ReactNode }) {
   const [canais, setCanais] = useState<Canais>(CANAIS_INICIAIS);
   const [contatosConfirmados, setContatosConfirmados] = useState(0);
 
+  // O relógio não é detectável pelo app: vale a confirmação da pessoa, salva no aparelho.
+  useEffect(() => {
+    let ativo = true;
+    lerPreferencia(PREF.relogioConfigurado).then((v) => {
+      if (ativo) setCanais((c) => ({ ...c, relogio: v === '1' }));
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const encerrarTrajeto = useCallback(() => setTrajeto(null), []);
+  const atualizarCanais = useCallback(
+    (parcial: Partial<Canais>) => setCanais((atual) => ({ ...atual, ...parcial })),
+    [],
+  );
+  const definirRelogio = useCallback(async (configurado: boolean) => {
+    await salvarPreferencia(PREF.relogioConfigurado, configurado ? '1' : '0');
+    setCanais((c) => ({ ...c, relogio: configurado }));
+  }, []);
+
   const valor = useMemo<TrajetoContexto>(
     () => ({
       posicao,
@@ -50,11 +76,12 @@ export function TrajetoProvider({ children }: { children: ReactNode }) {
       atualizarPosicao: setPosicao,
       iniciarTrajeto: setTrajeto,
       atualizarTrajeto: setTrajeto,
-      encerrarTrajeto: () => setTrajeto(null),
-      atualizarCanais: (parcial) => setCanais((atual) => ({ ...atual, ...parcial })),
+      encerrarTrajeto,
+      atualizarCanais,
+      definirRelogio,
       atualizarContatosConfirmados: setContatosConfirmados,
     }),
-    [posicao, trajeto, canais, contatosConfirmados],
+    [posicao, trajeto, canais, contatosConfirmados, encerrarTrajeto, atualizarCanais, definirRelogio],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

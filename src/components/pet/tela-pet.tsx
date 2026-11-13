@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
 import { ALTURA, LARGURA, NOME_CARINHA, QUADROS, type Carinha } from '@/features/pet/carinhas';
+import { useReduzirMovimento } from '@/hooks/use-reduzir-movimento';
 import { espaco, raio } from '@/theme/tokens';
 
 /** Tinta da tela OLED do Pet: igual nos dois temas, como um aparelho de verdade. */
@@ -14,17 +15,6 @@ type Props = {
   /** Cor da moldura: a cor do nível de risco (cor + carinha + palavra). */
   corMoldura: string;
 };
-
-/** Respeita "Reduzir movimento" do sistema: sem animação, fica no primeiro quadro. */
-function useReduzirMovimento() {
-  const [reduzir, setReduzir] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduzir);
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduzir);
-    return () => sub.remove();
-  }, []);
-  return reduzir;
-}
 
 function useQuadroAtual(carinha: Carinha, parado: boolean) {
   const [indice, setIndice] = useState(0);

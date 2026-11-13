@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { AccessibilityInfo, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -6,6 +8,8 @@ import { HeroiInicio } from '@/components/inicio/heroi-inicio';
 import { SecaoTrajeto } from '@/components/inicio/secao-trajeto';
 import { OndeEstou } from '@/components/risco/onde-estou';
 import { Texto } from '@/components/ui/texto';
+import { usePet } from '@/features/pet/pet-context';
+import { lerPreferencia, PREF } from '@/features/preferencias/preferencias-repo';
 import { explicacaoDaPosicao } from '@/features/trajeto/textos';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio, sombra } from '@/theme/tokens';
@@ -28,6 +32,19 @@ export default function InicioScreen() {
   const { cores } = useTema();
   const insets = useSafeAreaInsets();
   const { posicao, trajeto, canais, contatosConfirmados, encerrarTrajeto } = useTrajeto();
+  const petPareado = !!usePet().pareado;
+
+  // Primeiro acesso: mostra a orientação do relógio uma vez (F06 CA1, CA2).
+  // Quando as Permissões (F02) existirem, elas abrem esta tela logo depois.
+  useEffect(() => {
+    let ativo = true;
+    lerPreferencia(PREF.relogioOrientacaoVista).then((vista) => {
+      if (ativo && !vista) router.push('/relogio');
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
   // Sem posição ou fora da área coberta: nenhum nível (carinha "procurando").
   const nivel = posicao?.celulaId ? posicao.nivel : null;
 
@@ -59,10 +76,10 @@ export default function InicioScreen() {
       <View style={styles.topo}>
         <HeroiInicio
           nome={NOME_USUARIO}
-          local={posicao?.local ?? null}
           nivel={nivel}
           canais={canais}
-          onConectarPet={() => emProducao('Parear hoodi Pet', 'F06')}
+          onConectarPet={() => router.push(petPareado ? '/pet/conectado' : '/pet/parear')}
+          onConfigurarRelogio={() => router.push('/relogio')}
         />
       </View>
 

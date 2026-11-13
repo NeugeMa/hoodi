@@ -51,6 +51,8 @@ Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Ale
 - **expo-sqlite**: banco local, guarda a grade de risco para funcionar sem internet
 - **expo-crypto**: SHA-256 para conferir o arquivo da grade antes de usar
 - **react-native-maps**: mapa nativo (Google Maps no Android, Apple Maps no iOS)
+- **react-native-ble-plx**: Bluetooth Low Energy com o hoodi Pet (não funciona no Expo Go)
+- **lottie-react-native**: micro-interações em Lottie (radar de busca do Pet)
 
 ## Estrutura de pastas
 
@@ -101,6 +103,7 @@ Regras visuais combinadas pela equipe (além do v3):
 - **Ícones Phosphor** em vez de Lucide.
 - **Sombra sutil e borda limpa** nos cards (token `sombra.suave` + borda de 1px em `linha`). **Nada de gradientes.**
 - **Micro-interações com Lottie**, com animações aprovadas antes de entrar.
+- **Sem título no topo das telas:** a barra de navegação já diz onde você está; telas fora das abas têm só o botão de voltar.
 
 ## Acessibilidade
 
@@ -121,7 +124,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 | F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | **Pronto, aguardando a grade da API** |
 | F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
 | F05 · Trajeto em andamento | **Início** | Mari | **Layout pronto, aguardando dados** |
-| F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | A fazer |
+| F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | **Pronto** (Parear precisa de development build) |
 | F07 · Alerta de risco | Alerta no Início, notificação, vibração do Pet | Mari | A fazer |
 | F08 · Perfil e privacidade | Perfil, Dados e privacidade | Colega | A fazer |
 | F09 · Contatos e pedido de ajuda | Contatos de segurança, Pedir ajuda | Colega | A fazer |
@@ -221,6 +224,53 @@ Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nan
 
 `limites` (latitude e longitude da célula) deixam o app desenhar a célula no mapa sem depender da escolha entre geohash e H3. O trajeto (F04) precisa mandar os pontos do caminho (`caminho: [{ latitude, longitude }]`) para o Mapa pintar cada trecho. Faixa ausente numa célula vale como **Sem dado**.
 
+### Parear hoodi Pet e hoodi Pet conectado (F06)
+
+- **Parear** (`/pet/parear`): um **radar em Lottie** roda enquanto procura. Ao abrir, procura os Pets por perto por 15 s e lista com o sinal ("Sinal forte · a menos de 1 m"). Tocar em **Parear** conecta, grava o token deste celular no Pet e abre a tela do Pet.
+- **Avisos:** Expo Go sem Bluetooth, permissão negada (**Permitir**), Bluetooth desligado (CA6), nenhum Pet encontrado com dicas e **Procurar de novo** (CA7), e sempre "Só este celular comanda o Pet" (CA9).
+- **hoodi Pet conectado** (`/pet/conectado`): estado da conexão, as três carinhas (tranquila, atenta, preocupada), **Testar vibração** (CA5) e **Desconectar** com confirmação.
+- **Início:** o indicador **hoodi Pet** fica verde quando conectado e mostra **Conectar** quando não há Pet; tocar abre o pareamento ou a tela do Pet.
+- O Pet pareado fica salvo na tabela `pet_pareado`; ao abrir o app, ele tenta reconectar sozinho. Se a conexão cair, o Início volta a mostrar o Pet desconectado (CA8).
+
+**Bluetooth e Expo Go:** o Expo Go não tem o módulo de Bluetooth. Para testar o pareamento é preciso um **development build** (veja "Testar o Bluetooth" abaixo). No Expo Go e no navegador a tela mostra um aviso no lugar da busca.
+
+#### Animação de busca (Lottie)
+
+"Radar", de Debashish Nabajja, no [LottieFiles](https://lottiefiles.com/10336-radar), sob a Lottie Simple License. O arquivo original usava expressões, que o Lottie nativo não executa; elas foram convertidas em quadros-chave em [`assets/animacoes/busca-radar.json`](assets/animacoes/busca-radar.json). As cores são trocadas pelas do tema em tempo de execução, e a animação fica parada com "Reduzir movimento" ligado. Na pré-visualização web aparece a carinha "procurando" no lugar.
+
+#### Protocolo BLE com o hoodi Pet (PROVISÓRIO, a combinar com o Nando)
+
+| Item | Valor |
+|---|---|
+| Nome anunciado | `hoodi Pet XXXX` (4 últimos dígitos hex do MAC) |
+| Serviço | `f3a1c0de-0001-4b6f-8f0d-686f6f646900` |
+| Característica de pareamento (write) | `f3a1c0de-0002-4b6f-8f0d-686f6f646900` · recebe o token de 8 bytes |
+| Característica de comando (write) | `f3a1c0de-0003-4b6f-8f0d-686f6f646900` · token (8) + comando (1) + argumento (1) |
+
+| Comando | Byte | Argumento | O que o Pet faz |
+|---|---|---|---|
+| Alerta | `0x01` | `0` tranquila · `1` atenta · `2` preocupada | Mostra a carinha e vibra no padrão do nível |
+| Teste | `0x02` | `0` | Passa pelas três carinhas, vibrando em cada uma (F06 CA5) |
+| Esquecer | `0x03` | `0` | Apaga o token (desfaz o pareamento) |
+
+**Só este celular comanda o Pet (CA9):** o Pet guarda o token recebido no pareamento (NVS do ESP32) e ignora comandos que não começam com ele. Para parear com outro celular, o Pet precisa ser resetado (por exemplo, segurando o botão). Os valores ficam em [`src/features/pet/protocolo.ts`](src/features/pet/protocolo.ts).
+
+#### Testar o Bluetooth (development build)
+
+1. Crie uma conta gratuita em [expo.dev](https://expo.dev) e entre com `npx eas-cli@latest login`.
+2. Gere o app instalável de desenvolvimento para Android: `npx eas-cli@latest build --profile development --platform android` (na primeira vez, o EAS cria o `eas.json`). O build roda na nuvem e devolve um link para instalar o APK.
+3. Instale o APK no celular Android e rode `npx expo start --dev-client`. O app instalado lê o QR code no lugar do Expo Go.
+
+No iPhone, o development build exige conta paga da Apple; por isso, o teste de Bluetooth da equipe é no Android.
+
+### Configurar o relógio (F06 CA1, CA2)
+
+- Tela `/relogio`: "Receba o aviso no pulso", três passos (ativar as notificações do hoodi, háptico forte, exceção no modo Foco) e uma observação por plataforma (no iPhone, o aviso só chega ao relógio com o celular bloqueado).
+- **Aparece uma vez:** no primeiro acesso o Início abre a tela sozinho. Quando as Permissões (F02) existirem, elas devem abrir `/relogio` logo depois.
+- **Concluí:** marca o relógio como canal de aviso; o indicador **Relógio** do Início fica verde. O app não consegue detectar o relógio, então vale a confirmação da pessoa.
+- **Fazer depois:** fecha sem ativar; o indicador **Relógio** mostra **Configurar** e reabre a tela. O Perfil (F08) pode abrir `/relogio` para rever os passos.
+- Fica salvo na tabela `preferencias` (`relogio_orientacao_vista` e `relogio_configurado`).
+
 ### Histórico (F10)
 
 Os alertas recebidos nos trajetos, guardados só no aparelho.
@@ -240,6 +290,8 @@ O app usa **SQLite** (`expo-sqlite`), aberto em [`src/db/banco.ts`](src/db/banco
 |---|---|---|
 | `grade_risco` | Última grade de risco válida, para o Mapa e o alerta funcionarem sem internet | F03 |
 | `alertas` | Histórico de alertas (data, nível e trecho) | F10 |
+| `pet_pareado` | hoodi Pet pareado e o token deste celular | F06 |
+| `preferencias` | Preferências em chave/valor (orientação do relógio; pode ser usada pelo Perfil) | F06, F08 |
 
 Tudo fica só no aparelho. Na pré-visualização web, que não tem SQLite, os repositórios `.web.ts` usam o `localStorage`.
 
@@ -256,7 +308,6 @@ Tudo fica só no aparelho. Na pré-visualização web, que não tem SQLite, os r
 - **Nome de tratamento:** o cadastro só pede e-mail e senha (QA v2), mas o Início cumprimenta pelo nome. O design system v3 já mostra o campo no Criar conta; falta confirmar com a API.
 - **Início sem trajeto:** o design system não desenha esse estado. Hoje ele mostra o status atual, Pedir ajuda e Comparar rotas.
 - **Início fora do design system v3:** a régua deu lugar à telinha do Pet, e os cards agora têm borda de 1px e sombra sutil (o v3 pede cards sem borda e sem sombra). Falta levar ao design system.
-- **Lottie:** as micro-interações vão usar Lottie (`lottie-react-native`), com animações do LottieFiles escolhidas e aprovadas antes de entrar.
 - **Ícone do app e splash:** ainda são os do template do Expo.
 - **Integrações:** GPS, grade de risco, API e Bluetooth com o hoodi Pet ainda não estão ligados; por isso o Início mostra só os estados vazios.
 - **"Localizando você":** estado novo para quando a posição ainda não é conhecida. Não existe no design system v3; falta validar com quem cuida do design.

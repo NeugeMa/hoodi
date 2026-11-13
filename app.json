@@ -33,7 +33,15 @@
           "imageWidth": 76
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "O hoodi usa o Bluetooth para conectar ao hoodi Pet e mandar os avisos de risco para ele."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

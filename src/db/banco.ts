@@ -27,6 +27,19 @@ const MIGRACOES = [
      trecho TEXT NOT NULL
    );
    CREATE INDEX IF NOT EXISTS idx_alertas_criado_em ON alertas (criado_em DESC);`,
+  // v3 · hoodi Pet pareado com este celular e o token de pareamento (F06)
+  `CREATE TABLE IF NOT EXISTS pet_pareado (
+     id INTEGER PRIMARY KEY CHECK (id = 1),
+     dispositivo_id TEXT NOT NULL,
+     nome TEXT NOT NULL,
+     token_hex TEXT NOT NULL,
+     pareado_em TEXT NOT NULL
+   );`,
+  // v4 · preferências simples em chave/valor (orientação do relógio F06; Perfil F08)
+  `CREATE TABLE IF NOT EXISTS preferencias (
+     chave TEXT PRIMARY KEY NOT NULL,
+     valor TEXT NOT NULL
+   );`,
 ];
 
 let banco: Promise<SQLiteDatabase> | null = null;

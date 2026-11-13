@@ -7,17 +7,17 @@ import { Texto } from '@/components/ui/texto';
 import { carinhaDoNivel } from '@/features/pet/carinhas';
 import { NIVEL, type NivelRisco } from '@/features/risco/nivel';
 import type { Canais } from '@/features/trajeto/tipos';
-import { espaco, raio, sombra, tamanho } from '@/theme/tokens';
+import { espaco, raio, tamanho } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
 type Props = {
   /** Nome de tratamento. Nulo enquanto a conta (F01) não fornece o nome. */
   nome: string | null;
-  /** Bairro de onde a pessoa está. Nulo enquanto a posição não é conhecida. */
-  local: string | null;
   nivel: NivelRisco | null;
   canais: Canais;
   onConectarPet: () => void;
+  /** Abre a orientação do relógio (F06) quando ele ainda não foi configurado. */
+  onConfigurarRelogio: () => void;
 };
 
 function saudacao(agora = new Date()) {
@@ -28,17 +28,17 @@ function saudacao(agora = new Date()) {
 }
 
 /**
- * Parte de cima do Início, no mesmo estilo do Mapa: chip flutuante com saudação e bairro,
- * a telinha do hoodi Pet e os canais de aviso (F05 CA2).
+ * Parte de cima do Início: logo e saudação, a telinha do hoodi Pet e os canais de aviso (F05 CA2).
+ * O bairro fica no painel de baixo ("Onde você está agora"), para o topo ficar limpo.
  */
-export function HeroiInicio({ nome, local, nivel, canais, onConectarPet }: Props) {
+export function HeroiInicio({ nome, nivel, canais, onConectarPet, onConfigurarRelogio }: Props) {
   const { cores, escuro } = useTema();
   const semCor = nivel === null || nivel === 'sem-dado';
   const corMoldura = semCor ? cores.grafiteApagado : cores[NIVEL[nivel].cor];
 
   return (
     <View style={styles.heroi}>
-      <View style={[styles.chip, sombra.suave, { backgroundColor: cores.papelElevado, borderColor: cores.linha }]}>
+      <View style={styles.saudacao}>
         {/* Tema escuro usa a versão com contorno (regra de uso da logo). */}
         <Image
           source={
@@ -53,9 +53,6 @@ export function HeroiInicio({ nome, local, nivel, canais, onConectarPet }: Props
         <Texto variante="subtitulo" accessibilityRole="header" numberOfLines={1} style={styles.encolhe}>
           {nome ? `${saudacao()}, ${nome}` : saudacao()}
         </Texto>
-        <Texto variante="legenda" numberOfLines={1} style={styles.encolhe}>
-          · {local ?? 'Localizando…'}
-        </Texto>
       </View>
 
       <View style={styles.pet}>
@@ -67,7 +64,9 @@ export function HeroiInicio({ nome, local, nivel, canais, onConectarPet }: Props
           rotulo="Relógio"
           conectado={canais.relogio}
           Icone={Watch}
-          a11y={canais.relogio ? 'Relógio conectado' : 'Relógio sem notificações'}
+          a11y={canais.relogio ? 'Relógio configurado' : 'Relógio não configurado. Toque para configurar'}
+          acao="Configurar"
+          onPress={canais.relogio ? undefined : onConfigurarRelogio}
         />
         <Canal
           rotulo="hoodi Pet"
@@ -80,6 +79,7 @@ export function HeroiInicio({ nome, local, nivel, canais, onConectarPet }: Props
                 ? 'hoodi Pet reconectando. Toque para ver'
                 : 'hoodi Pet desconectado. Toque para conectar'
           }
+          acao="Conectar"
           onPress={canais.pet ? undefined : onConectarPet}
         />
       </View>
@@ -92,11 +92,13 @@ type CanalProps = {
   conectado: boolean;
   Icone: typeof Watch;
   a11y: string;
+  /** Texto do link quando o canal não está ativo ("Conectar", "Configurar"). */
+  acao?: string;
   onPress?: () => void;
 };
 
 /** Indicador de canal: verde conectado; cinza desconectado, nunca vermelho. */
-function Canal({ rotulo, conectado, Icone, a11y, onPress }: CanalProps) {
+function Canal({ rotulo, conectado, Icone, a11y, acao, onPress }: CanalProps) {
   const { cores } = useTema();
   const cor = conectado ? cores.seguroTexto : cores.grafiteSuave;
   return (
@@ -119,7 +121,7 @@ function Canal({ rotulo, conectado, Icone, a11y, onPress }: CanalProps) {
       </Texto>
       {onPress ? (
         <Texto variante="rotulo" cor="grafite" style={styles.sublinhado}>
-          Conectar
+          {acao}
         </Texto>
       ) : null}
     </Pressable>
@@ -128,17 +130,7 @@ function Canal({ rotulo, conectado, Icone, a11y, onPress }: CanalProps) {
 
 const styles = StyleSheet.create({
   heroi: { gap: espaco[4], alignItems: 'center' },
-  chip: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: espaco[2],
-    paddingLeft: espaco[2],
-    paddingRight: espaco[4],
-    paddingVertical: espaco[2],
-    borderRadius: raio.total,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
+  saudacao: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: espaco[2] },
   logo: { width: 32, height: 32 },
   encolhe: { flexShrink: 1 },
   pet: { width: '82%' },

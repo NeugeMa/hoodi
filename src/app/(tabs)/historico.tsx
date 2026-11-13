@@ -59,17 +59,6 @@ export default function HistoricoScreen() {
   return (
     <View style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
       <View style={styles.topo}>
-        <View style={[styles.chip, sombra.suave, { backgroundColor: cores.papelElevado, borderColor: cores.linha }]}>
-          <Texto variante="subtitulo" accessibilityRole="header">
-            Histórico
-          </Texto>
-          {temAlertas ? (
-            <Texto variante="legenda">
-              · {alertas.length === 1 ? '1 alerta' : `${alertas.length} alertas`}
-            </Texto>
-          ) : null}
-        </View>
-
         {temAlertas ? (
           <View
             accessible
@@ -131,16 +120,6 @@ function Contagem({ nivel, quantidade }: { nivel: 'medio' | 'alto'; quantidade: 
 const styles = StyleSheet.create({
   tela: { flex: 1 },
   topo: { paddingHorizontal: espaco[4], paddingBottom: espaco[6], gap: espaco[4] },
-  chip: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: espaco[1],
-    paddingHorizontal: espaco[4],
-    paddingVertical: espaco[2],
-    borderRadius: raio.total,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
   resumo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   total: { flexDirection: 'row', alignItems: 'center', gap: espaco[3] },
   contagens: { flexDirection: 'row', gap: espaco[2] },
