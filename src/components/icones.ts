@@ -19,6 +19,8 @@ export { X } from 'phosphor-react-native/src/icons/X';
 export { ClockCounterClockwise } from 'phosphor-react-native/src/icons/ClockCounterClockwise';
 export { Clock } from 'phosphor-react-native/src/icons/Clock';
 export { House } from 'phosphor-react-native/src/icons/House';
+export { Lock } from 'phosphor-react-native/src/icons/Lock';
+export { Trash } from 'phosphor-react-native/src/icons/Trash';
 export { MapPin } from 'phosphor-react-native/src/icons/MapPin';
 export { MapTrifold } from 'phosphor-react-native/src/icons/MapTrifold';
 export { NavigationArrow } from 'phosphor-react-native/src/icons/NavigationArrow';

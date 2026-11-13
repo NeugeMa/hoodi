@@ -67,11 +67,14 @@ src/
 ├── components/
 │   ├── ui/                 # Peças genéricas do design system (texto, botão, cartão, hachura)
 │   ├── pet/                # Telinha animada do hoodi Pet
+│   ├── historico/          # Lista de alertas agrupada por dia
 │   ├── inicio/             # Componentes da tela Início
 │   ├── mapa/               # Mapa nativo, estilo cinza, painel e legenda
 │   └── risco/              # "Onde você está agora" e selo do nível (Início e Mapa)
+├── db/                     # Banco local SQLite e migrações
 ├── features/
 │   ├── grade/              # Grade de risco: download, checksum, banco local e geometria
+│   ├── historico/          # Histórico local de alertas (banco e agrupamento)
 │   ├── pet/                # Carinhas em pixel art e seus quadros
 │   ├── risco/              # Níveis de risco: nomes, ícones e cores
 │   └── trajeto/            # Estado do trajeto, posição e canais de aviso
@@ -122,7 +125,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 | F07 · Alerta de risco | Alerta no Início, notificação, vibração do Pet | Mari | A fazer |
 | F08 · Perfil e privacidade | Perfil, Dados e privacidade | Colega | A fazer |
 | F09 · Contatos e pedido de ajuda | Contatos de segurança, Pedir ajuda | Colega | A fazer |
-| F10 · Histórico de alertas | Histórico | Mari | A fazer |
+| F10 · Histórico de alertas | Histórico | Mari | **Pronto, aguardando os alertas (F07)** |
 
 ### Início (F05)
 
@@ -189,7 +192,7 @@ Mapa real em tons de cinza com o risco por cima: a única cor na tela é a do ri
 
 #### Grade de risco: banco local e download
 
-- **Banco:** a última grade válida fica no **SQLite** do celular, tabela `grade_risco` ([`grade-repo.ts`](src/features/grade/grade-repo.ts)). Na pré-visualização web, o mesmo papel é do `localStorage` ([`grade-repo.web.ts`](src/features/grade/grade-repo.web.ts)).
+- **Banco:** a última grade válida fica no **SQLite** do celular, tabela `grade_risco` ([`grade-repo.ts`](src/features/grade/grade-repo.ts)); veja "Banco de dados local" abaixo.
 - **Download:** [`grade-api.ts`](src/features/grade/grade-api.ts) busca `GET /grade/manifesto.json` e, se a versão mudou, `GET /grade/{versao}.json`. O app só usa o arquivo se o SHA-256 do texto bater com o do manifesto.
 - **Endereço da API:** crie um arquivo `.env` na raiz com `EXPO_PUBLIC_API_URL=http://SEU-IP:PORTA` (no celular, use o IP da máquina, não `localhost`).
 
@@ -217,6 +220,28 @@ Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nan
 ```
 
 `limites` (latitude e longitude da célula) deixam o app desenhar a célula no mapa sem depender da escolha entre geohash e H3. O trajeto (F04) precisa mandar os pontos do caminho (`caminho: [{ latitude, longitude }]`) para o Mapa pintar cada trecho. Faixa ausente numa célula vale como **Sem dado**.
+
+### Histórico (F10)
+
+Os alertas recebidos nos trajetos, guardados só no aparelho.
+
+- **Chip do topo** com a quantidade de alertas e um **resumo dos últimos 7 dias** (total, Risco médio e Risco alto).
+- **"Guardado só neste aparelho":** o histórico não é enviado para ninguém e abre sem internet (CA2).
+- **Lista agrupada por dia** (Hoje, Ontem, "9 nov."), do mais recente para o mais antigo, com ícone do nível, rua e "Risco alto · 23:14" (CA1).
+- **Apagar histórico**, com confirmação (CA3). Sem alertas: "Ainda não há alertas" (CA4).
+
+Os alertas ficam na tabela `alertas` do SQLite ([`historico-repo.ts`](src/features/historico/historico-repo.ts)). O alerta de risco (F07) chama `registrarAlerta({ criadoEm, nivel, trecho })` cada vez que dispara, e a exclusão de conta (F08) pode chamar `apagarHistorico()`. **Estado atual:** como o F07 ainda não existe, a tela mostra "Ainda não há alertas".
+
+## Banco de dados local
+
+O app usa **SQLite** (`expo-sqlite`), aberto em [`src/db/banco.ts`](src/db/banco.ts). Cada mudança de schema é uma migração nova no fim da lista (a versão fica em `PRAGMA user_version`).
+
+| Tabela | Para quê | Feature |
+|---|---|---|
+| `grade_risco` | Última grade de risco válida, para o Mapa e o alerta funcionarem sem internet | F03 |
+| `alertas` | Histórico de alertas (data, nível e trecho) | F10 |
+
+Tudo fica só no aparelho. Na pré-visualização web, que não tem SQLite, os repositórios `.web.ts` usam o `localStorage`.
 
 ## Como contribuir
 
