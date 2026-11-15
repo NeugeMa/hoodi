@@ -52,9 +52,6 @@ export default function InicioScreen() {
   // Sem posição ou fora da área coberta: nenhum nível (carinha "procurando").
   const nivel = posicao?.celulaId ? posicao.nivel : null;
 
-  function emProducao(tela: string, feature: string) {
-    Alert.alert(tela, `Esta tela ainda está em produção (${feature}).`);
-  }
 
   function confirmarEncerrar() {
     // Ações que desligam algo sempre pedem confirmação (design system v3).
@@ -113,7 +110,7 @@ export default function InicioScreen() {
           <View style={[styles.divisor, { backgroundColor: cores.linha }]} />
           <SecaoTrajeto
             trajeto={trajeto}
-            onCompararRotas={() => emProducao('Comparar rotas', 'F04')}
+            onCompararRotas={() => router.push('/comparar-rotas')}
             onEncerrar={confirmarEncerrar}
           />
         </ScrollView>

@@ -21,4 +21,6 @@ export const PREF = {
   instalacaoId: 'instalacao_id',
   /** Horários (ISO, JSON) dos pedidos de ajuda da última hora, para o limite de 3 por hora (F09 CA7). */
   pedidosAjuda: 'pedidos_ajuda',
+  /** Preferências de alerta do Perfil (F08 CA1, CA2), em JSON: vibração, som, antecedência e horário. */
+  alertas: 'preferencias_alertas',
 } as const;

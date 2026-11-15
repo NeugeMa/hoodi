@@ -6,6 +6,8 @@ import { useGrade } from '@/features/grade/grade-context';
 import { faixaAtual } from '@/features/grade/recorte';
 import { registrarAlerta } from '@/features/historico/historico-repo';
 import { usePet } from '@/features/pet/pet-context';
+import { horarioPermite } from '@/features/preferencias/alertas';
+import { usePreferencias } from '@/features/preferencias/preferencias-context';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 
 import { ESTADO_INICIAL, motivoDoNivel, processarPosicao, proximoTrechoDeRisco, type Alerta, type EstadoMotor } from './motor';
@@ -38,6 +40,7 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
   const { grade } = useGrade();
   const { trajeto, atualizarPosicao, ajustarTrajeto } = useTrajeto();
   const { enviarNivel } = usePet();
+  const { alertas: preferencias, consentimentoEm } = usePreferencias();
   const [permissao, setPermissao] = useState<PermissaoLocalizacao>('desconhecida');
   const [alertaAtivo, setAlertaAtivo] = useState<Alerta | null>(null);
 
@@ -45,13 +48,17 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
   const gradeRef = useRef(grade);
   const trajetoRef = useRef(trajeto);
   const enviarNivelRef = useRef(enviarNivel);
+  const preferenciasRef = useRef(preferencias);
+  const consentimentoRef = useRef(consentimentoEm);
   const motorRef = useRef<EstadoMotor>(ESTADO_INICIAL);
   const timerMedioRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     gradeRef.current = grade;
     trajetoRef.current = trajeto;
     enviarNivelRef.current = enviarNivel;
-  }, [grade, trajeto, enviarNivel]);
+    preferenciasRef.current = preferencias;
+    consentimentoRef.current = consentimentoEm;
+  }, [grade, trajeto, enviarNivel, preferencias, consentimentoEm]);
 
   // Sem trajeto não há alerta (F05 CA4): limpa o estado do motor quando o trajeto acaba.
   const emTrajeto = !!trajeto;
@@ -85,11 +92,13 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
 
   const disparar = useCallback(
     (alerta: Alerta) => {
+      // Consentimento revogado (F08 CA4) ou fora do horário escolhido no Perfil: não alerta.
+      if (!consentimentoRef.current || !horarioPermite(preferenciasRef.current.horario)) return;
       if (timerMedioRef.current) clearTimeout(timerMedioRef.current);
       setAlertaAtivo(alerta);
       AccessibilityInfo.announceForAccessibility(`${alerta.titulo}. ${alerta.texto}`);
       if (alerta.nivel === 'medio') timerMedioRef.current = setTimeout(() => setAlertaAtivo(null), TEMPO_ALERTA_MEDIO_MS);
-      notificarAlerta(alerta).catch(() => {});
+      notificarAlerta(alerta, { som: preferenciasRef.current.som }).catch(() => {});
       enviarNivelRef.current(alerta.nivel).catch(() => {});
       registrarAlerta({ criadoEm: new Date().toISOString(), nivel: alerta.nivel, trecho: alerta.trecho }).catch(() => {});
       ajustarTrajeto((t) => ({ alertasRecebidos: t.alertasRecebidos + 1 }));

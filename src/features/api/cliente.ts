@@ -6,6 +6,14 @@
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 
+/**
+ * Rotas que a API ainda não tem (pânico e rotas) podem ir para o mock do Prism:
+ * EXPO_PUBLIC_MOCK_URL=http://IP-DO-PC:4010 no .env. Sem a variável, vão para a API normal.
+ * (EXPO_PUBLIC_PANICO_URL continua aceito, por compatibilidade.)
+ */
+export const MOCK_URL =
+  (process.env.EXPO_PUBLIC_MOCK_URL || process.env.EXPO_PUBLIC_PANICO_URL)?.replace(/\/$/, '') || API_URL;
+
 const TEMPO_LIMITE_MS = 15_000;
 
 export type TipoFalha =

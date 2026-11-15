@@ -38,3 +38,12 @@ export function redefinirSenha(token: string, novaSenha: string) {
 export function sairNoServidor(instalacaoId: string) {
   return chamarAutenticado<void>('/v1/auth/sair', { metodo: 'POST', corpo: { instalacaoId } });
 }
+
+/**
+ * Exclui a conta e os vínculos de contato no servidor (F08 CA5 · RF09).
+ * ATENÇÃO: a API ainda não tem essa rota. O caminho abaixo é a PROPOSTA para o Abner;
+ * enquanto não existir, a API responde 404/405 e o app avisa que nada foi apagado.
+ */
+export function excluirConta() {
+  return chamarAutenticado<void>('/v1/conta', { metodo: 'DELETE' });
+}

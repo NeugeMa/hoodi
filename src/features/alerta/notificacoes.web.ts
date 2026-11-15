@@ -5,4 +5,4 @@ export async function prepararNotificacoes() {
   return false;
 }
 
-export async function notificarAlerta(_alerta: Alerta) {}
+export async function notificarAlerta(_alerta: Alerta, _opcoes: { som?: boolean } = {}) {}

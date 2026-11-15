@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 import { lerPreferencia, PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 
-import { login, sairNoServidor } from './auth-api';
+import { excluirConta as excluirContaNaApi, login, sairNoServidor } from './auth-api';
 import { carregarSessao, definirSessao, ouvirSessao } from './sessao';
 import { sessaoDeTokens, type UsuarioResumo } from './tipos';
 
@@ -21,6 +21,8 @@ type ContaValor = {
   entrar: (email: string, senha: string) => Promise<void>;
   /** Sai mesmo sem internet: o servidor é avisado quando dá, e o aparelho esquece a sessão sempre. */
   sair: () => Promise<void>;
+  /** Exclui a conta no servidor e esquece a sessão. Lança ErroApi se o servidor não excluir. */
+  excluirConta: () => Promise<void>;
 };
 
 const ContaContext = createContext<ContaValor | null>(null);
@@ -65,7 +67,13 @@ export function ContaProvider({ children }: { children: ReactNode }) {
     await definirSessao(null);
   }
 
-  return <ContaContext.Provider value={{ estado, usuario, entrar, sair }}>{children}</ContaContext.Provider>;
+  async function excluirConta() {
+    await excluirContaNaApi();
+    await salvarPreferencia(PREF.ultimoEmail, '');
+    await definirSessao(null);
+  }
+
+  return <ContaContext.Provider value={{ estado, usuario, entrar, sair, excluirConta }}>{children}</ContaContext.Provider>;
 }
 
 export function useConta() {

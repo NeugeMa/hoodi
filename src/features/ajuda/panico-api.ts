@@ -1,4 +1,4 @@
-import { API_URL } from '@/features/api/cliente';
+import { MOCK_URL } from '@/features/api/cliente';
 import { chamarAutenticado } from '@/features/conta/sessao';
 
 /**
@@ -7,11 +7,8 @@ import { chamarAutenticado } from '@/features/conta/sessao';
  * nome, hora e posição. "Push enviado" não quer dizer "recebido": o app nunca afirma entrega.
  */
 
-/**
- * Enquanto o pânico só existe no mock, dá para apontar só ele para o Prism:
- * EXPO_PUBLIC_PANICO_URL=http://IP-DO-PC:4010 no .env. Sem a variável, usa a API normal.
- */
-const BASE = process.env.EXPO_PUBLIC_PANICO_URL?.replace(/\/$/, '') || API_URL;
+/** Enquanto o pânico só existe no mock, vai para EXPO_PUBLIC_MOCK_URL (veja cliente.ts). */
+const BASE = MOCK_URL;
 
 export type EstadoDespachos =
   | 'sem_destinatarios'

@@ -82,6 +82,7 @@ src/
 │   ├── api/                # Cliente HTTP da API (endereço, erros problem+json)
 │   ├── conta/              # Sessão, login, cadastro em 2 etapas e renovação do token
 │   ├── contatos/           # Contatos de segurança por convite (F09)
+│   ├── rotas/              # Comparar rotas: API, geometria e regras da comparação (F04)
 │   ├── ajuda/              # Pedido de ajuda: API do pânico, limite por hora, posição aproximada e push
 │   ├── grade/              # Grade de risco: download, checksum, banco local e geometria
 │   ├── historico/          # Histórico local de alertas (banco e agrupamento)
@@ -132,11 +133,11 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 | F01 · Cadastro e acesso | Entrar, Criar conta, Confirmar, Esqueci a senha | Mari | **Pronto, ligado à API** |
 | F02 · Boas-vindas e permissões | Permissões | Colega | A fazer |
 | F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | **Pronto, aguardando a grade da API** |
-| F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
+| F04 · Comparar rotas | Comparar rotas | Mari | **Pronto** (rotas no mock da API) |
 | F05 · Trajeto em andamento | **Início** | Mari | **Layout pronto, aguardando dados** |
 | F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | **Pronto** (Parear precisa de development build) |
 | F07 · Alerta de risco | Alerta na tela, notificação, vibração do Pet | Mari | **Pronto** (com o app aberto; segundo plano a fazer) |
-| F08 · Perfil e privacidade | Perfil, Dados e privacidade | Colega | A fazer |
+| F08 · Perfil e privacidade | Perfil, Dados e privacidade | Mari | **Pronto** (excluir conta espera a API) |
 | F09 · Contatos e pedido de ajuda | Contatos de segurança, Convite, Pedir ajuda, Pedido recebido | Mari | **Pronto** (contatos na API; pedido de ajuda no mock) |
 | F10 · Histórico de alertas | Histórico | Mari | **Pronto** |
 
@@ -278,7 +279,40 @@ Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por 
 - **Pedido de ajuda:** vai com a posição **arredondada para cerca de 100 m** (endereço aproximado) e uma chave de idempotência reaproveitada por 120 s, para um toque repetido não virar dois pedidos. A tela mostra a situação sem prometer entrega ("o aviso saiu", nunca "recebido").
 - **Mensagem (CA5):** convite e pedido não pedem login, senha, dinheiro nem instalação e terminam com "Se não reconhece, ignore".
 - **Push:** depois de entrar, o app registra o token Expo do aparelho na API (`PUT /v1/push/tokens`), e tocar no aviso abre o pedido. Precisa de development build com projeto EAS (`extra.eas.projectId`); sem isso, o contato vê o pedido em **Contatos > Pedidos de ajuda recebidos**.
-- **Estado da API:** contatos, convites e push já estão na API do Abner; o pânico (`/v1/panico`) ainda está no mock do Prism. Para testar os dois juntos, rode o Prism na porta 4010 (`npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0`) e ponha no `.env` também `EXPO_PUBLIC_PANICO_URL=http://IP-DO-PC:4010`. Sem essa variável, o pânico usa o `EXPO_PUBLIC_API_URL`.
+- **Estado da API:** contatos, convites e push já estão na API do Abner; o pânico (`/v1/panico`) ainda está no mock do Prism. Para testar os dois juntos, rode o Prism na porta 4010 (`npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0`) e ponha no `.env` também `EXPO_PUBLIC_MOCK_URL=http://IP-DO-PC:4010` (pânico e rotas vão para o mock; o antigo `EXPO_PUBLIC_PANICO_URL` ainda funciona). Sem essa variável, eles usam o `EXPO_PUBLIC_API_URL`.
+
+### Comparar rotas (F04)
+
+Aberta pelo **Comparar rotas** do Início (precisa de conta, porque a API de rotas exige login).
+
+- **Origem:** sempre a sua posição atual (TC13). Sem permissão de localização, a tela pede antes.
+- **Destino:** endereço ou nome do lugar, convertido em coordenada pelo **próprio celular** (`expo-location`); nada disso vai para o servidor do Hoodi além da consulta de rotas. Vazio ou não encontrado: o app explica e não compara (CA4).
+- **Resultado** (`POST /v1/rotas/avaliar`, ainda no mock): cartões **Menor risco registrado** e **Rota normal** (a mais rápida), com a diferença em minutos e uma frase como "Esta rota evita 3 células de risco alto" (contada na grade salva no aparelho) ou, sem grade, a diferença percentual de risco registrado (CA1). Se a mais rápida já é a de menor risco, aparece um cartão só.
+- **Trecho sem dado (CA2 · TC14):** se qualquer rota tem trecho sem dado (pela API ou pela grade do aparelho), o app diz "Não dá para comparar" e mostra as rotas só como "Rota 1, Rota 2". É mais rígido que a regra de 70% da API, de propósito, para seguir o QA v2.
+- **Fora da área (CA4)** e **sem internet (CA5 · TC34):** avisos próprios; sem internet, o botão **Ver o mapa** leva ao Mapa com os dados salvos.
+- **Iniciar trajeto (CA6):** começa o acompanhamento com o caminho da rota escolhida (o Mapa desenha) e volta ao Início. Sem consentimento, pede antes (F08 CA4 · TC38).
+- **Linguagem (CA3):** só "menor risco registrado" e "melhor dado disponível no período".
+
+> Com o mock do Prism, a resposta de exemplo tem uma rota com 10% sem dado, então a tela mostra "Não dá para comparar" (é a regra do CA2 funcionando). Para ver o TC13 com as duas rotas, é preciso a API real ou um exemplo do Abner com as rotas 100% com dado.
+
+### Perfil e Dados e privacidade (F08)
+
+O **Perfil** funciona com ou sem conta; sem conta, mostra o convite para **Entrar** ou **Criar conta**.
+
+| Grupo | Linhas | QA |
+|---|---|---|
+| Alertas | **Vibração do Hoodi Pet** (fraca, média, forte), **Som no celular** (liga e desliga), **Antecedência do aviso** (100, 300 ou 600 m) e **Horário dos alertas** (sempre ou só à noite, 18h–6h). O valor escolhido aparece na linha | CA1 |
+| Canais de aviso | **Relógio** (reabre a orientação, F06 CA2) e **Hoodi Pet** (conectado, desconectado ou não pareado) | F05 CA2, F06 |
+| Segurança e dados | **Contatos de segurança** e **Dados e privacidade** | F09, CA3 |
+| Conta | **Sair**, com confirmação | CA6 |
+
+- As preferências ficam no aparelho (tabela `preferencias`, chave `preferencias_alertas`) e continuam valendo ao abrir o app de novo (CA2).
+- **Já fazem efeito:** o **som** (dois canais de notificação no Android, com e sem som) e o **horário** (fora dele, o alerta não dispara). **Vibração** e **antecedência** ficam salvas e entram em uso com o Bluetooth v1 do Pet e o aviso antecipado do próximo trecho.
+
+**Dados e privacidade** (`/privacidade`):
+- O que fica no aparelho e o que sai, e que o risco vem da SSP-SP (CA3 · TC32).
+- **Revogar consentimento** (CA4 · TC38): com confirmação; os alertas param e o app explica como dar de novo (**Dar consentimento**). Sem consentimento, Comparar rotas pede o consentimento antes de iniciar o trajeto.
+- **Excluir conta** (CA5 · TC39): com confirmação. **A API ainda não tem essa rota**; o app chama `DELETE /v1/conta` (proposta para o Abner) e, enquanto ela não existir, avisa que **nada foi apagado**.
 
 ### Parear hoodi Pet e hoodi Pet conectado (F06)
 
