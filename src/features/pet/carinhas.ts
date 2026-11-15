@@ -13,8 +13,8 @@ export const ALTURA = 12;
 /** Recorte da grade de trabalho (21 × 14) para a tela (17 × 12). */
 const DESLOCAMENTO = { x: -2, y: -1 };
 
-/** tranquila/atenta/preocupada vêm do design system; confusa e procurando são extras do app. */
-export type Carinha = 'tranquila' | 'atenta' | 'preocupada' | 'confusa' | 'procurando';
+/** tranquila/atenta/preocupada vêm do design system; confusa, procurando e timida são extras do app. */
+export type Carinha = 'tranquila' | 'atenta' | 'preocupada' | 'confusa' | 'procurando' | 'timida';
 
 export type Quadro = {
   /** Pixels acesos como [x, y]. */
@@ -44,6 +44,7 @@ export const NOME_CARINHA: Record<Carinha, string> = {
   preocupada: 'preocupada',
   confusa: 'confusa',
   procurando: 'procurando você',
+  timida: 'de olhos fechados, sem olhar a sua senha',
 };
 
 // ---------- Partes do rosto ----------
@@ -188,5 +189,10 @@ export const QUADROS: Record<Carinha, Quadro[]> = {
     q({ olhos: 'abertos', boca: 'pontos2', olharX: 1 }, 350),
     q({ olhos: 'abertos', boca: 'pontos3', olharX: 1 }, 350),
     q({ olhos: 'piscando', boca: 'pontos3' }, 130),
+  ],
+  // Enquanto a pessoa digita a senha: fecha os olhos para não olhar (só na tela de Entrar).
+  timida: [
+    q({ olhos: 'piscando', boca: 'sorriso' }, 1600),
+    q({ olhos: 'piscando', boca: 'sorriso', dy: -1 }, 500),
   ],
 };

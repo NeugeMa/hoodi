@@ -77,7 +77,7 @@ export default function ConviteScreen() {
       <TelaConta
         titulo="Convite de contato"
         voltar={false}
-        rodape={<Botao rotulo="Entrar ou criar conta" onPress={() => router.replace('/boas-vindas')} />}>
+        rodape={<Botao rotulo="Entrar ou criar conta" onPress={() => router.replace('/entrar')} />}>
         <Aviso
           icone={ShieldCheck}
           titulo="Entre no hoodi para responder"

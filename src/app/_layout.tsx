@@ -81,7 +81,7 @@ function Navegacao() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={logado} redirectTo="/boas-vindas">
+      <Stack.Protected guard={logado} redirectTo="/entrar">
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="pet/parear" />
         <Stack.Screen name="pet/conectado" />
