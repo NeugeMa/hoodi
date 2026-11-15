@@ -112,7 +112,7 @@ export default function InicioScreen() {
         <View style={[styles.rodape, { borderTopColor: cores.linha }]}>
           <BotaoPedirAjuda
             contatosConfirmados={contatosConfirmados}
-            onPress={() => emProducao('Pedir ajuda', 'F09')}
+            onPress={() => router.push('/pedir-ajuda')}
           />
           <Texto variante="legenda" style={styles.centro} accessible={false}>
             {textoContatos(contatosConfirmados)}

@@ -16,7 +16,7 @@ type Props = {
   /** Campos e textos do meio. */
   children: ReactNode;
   /** Botões do rodapé, ao alcance do polegar (no máximo um primário). */
-  rodape: ReactNode;
+  rodape?: ReactNode;
 };
 
 /**
@@ -48,9 +48,11 @@ export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape }
           showsVerticalScrollIndicator={false}>
           {children}
         </ScrollView>
-        <View style={[styles.rodape, { borderTopColor: cores.linha, paddingBottom: insets.bottom + espaco[3] }]}>
-          {rodape}
-        </View>
+        {rodape ? (
+          <View style={[styles.rodape, { borderTopColor: cores.linha, paddingBottom: insets.bottom + espaco[3] }]}>
+            {rodape}
+          </View>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );

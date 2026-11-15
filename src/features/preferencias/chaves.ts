@@ -17,4 +17,6 @@ export const PREF = {
   consentimentoEm: 'consentimento_em',
   /** Identificador desta instalação do app (sair e token de push). */
   instalacaoId: 'instalacao_id',
+  /** Horários (ISO, JSON) dos pedidos de ajuda da última hora, para o limite de 3 por hora (F09 CA7). */
+  pedidosAjuda: 'pedidos_ajuda',
 } as const;

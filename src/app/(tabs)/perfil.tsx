@@ -1,7 +1,8 @@
+import { router } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Info, SignOut } from '@/components/icones';
+import { Info, SignOut, Users } from '@/components/icones';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
@@ -37,6 +38,7 @@ export default function PerfilScreen() {
           titulo="Perfil em produção"
           texto="Preferências, canais de aviso e Dados e privacidade chegam em breve (F08)."
         />
+        <Botao rotulo="Contatos de segurança" variante="secundario" icone={Users} onPress={() => router.push('/contatos')} />
         <Botao rotulo="Sair" variante="secundario" icone={SignOut} onPress={confirmarSair} />
       </View>
     </SafeAreaView>

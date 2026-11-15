@@ -81,6 +81,8 @@ src/
 ├── features/
 │   ├── api/                # Cliente HTTP da API (endereço, erros problem+json)
 │   ├── conta/              # Sessão, login, cadastro em 2 etapas e renovação do token
+│   ├── contatos/           # Contatos de segurança por convite (F09)
+│   ├── ajuda/              # Pedido de ajuda: API do pânico, limite por hora, posição aproximada e push
 │   ├── grade/              # Grade de risco: download, checksum, banco local e geometria
 │   ├── historico/          # Histórico local de alertas (banco e agrupamento)
 │   ├── pet/                # Carinhas em pixel art e seus quadros
@@ -133,7 +135,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 | F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | **Pronto** (Parear precisa de development build) |
 | F07 · Alerta de risco | Alerta na tela, notificação, vibração do Pet | Mari | **Pronto** (com o app aberto; segundo plano a fazer) |
 | F08 · Perfil e privacidade | Perfil, Dados e privacidade | Colega | A fazer |
-| F09 · Contatos e pedido de ajuda | Contatos de segurança, Pedir ajuda | Colega | A fazer |
+| F09 · Contatos e pedido de ajuda | Contatos de segurança, Convite, Pedir ajuda, Pedido recebido | Mari | **Pronto** (contatos na API; pedido de ajuda no mock) |
 | F10 · Histórico de alertas | Histórico | Mari | **Pronto** |
 
 ### Início (F05)
@@ -254,6 +256,25 @@ Ligado à API .NET (`/v1/auth`). Sem conta, o app só mostra as telas de conta; 
 2. Na raiz deste app, crie o `.env` com `EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000` (o IP da máquina na rede, não `localhost`) e reinicie o `npm start`.
 3. O e-mail do cadastro cai no **Mailpit**: `http://localhost:8025` no PC.
 4. Partes da API que ainda não existem (grade, pânico, rotas, dispositivos) continuam no mock: `npx @stoplight/prism-cli mock contracts/openapi.yaml`.
+
+### Contatos de segurança e Pedir ajuda (F09)
+
+Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por convite (não há SMS). Quem aceita o convite passa a receber os pedidos de ajuda de quem convidou.
+
+| Tela | Rota | O que faz | QA |
+|---|---|---|---|
+| Contatos de segurança | `/contatos` (Perfil) | Quem recebe seus pedidos (**Confirmado** ou **Aguardando confirmação**), até 5; **Convidar contato**; de quem você é contato, com **Sair**; pedidos recebidos; campo para colar um convite | CA1, CA2, CA3, CA6, CA9 |
+| Convite | `/convite` | Aberta pelo link `hoodi://convite#codigo=...`: explica o que muda e oferece **Aceitar** ou **Recusar** | CA1, CA2 |
+| Pedir ajuda | `/pedir-ajuda` (Início) | Confirmação com a prévia do que os contatos veem; único botão vermelho | CA4, CA5, CA7, CA8 |
+| Pedido recebido | `/ajuda/[id]` | Para o contato: nome, hora, endereço aproximado em texto e **Abrir no Google Maps** | CA4 |
+
+- **Convite:** o app cria o código na API e abre o menu de compartilhar com o link. O código só aparece uma vez (regra da API); se a pessoa sair da tela, cria outro. Convites pendentes podem ser cancelados. A API só mostra o nome de quem convidou depois do aceite.
+- **Limites (o app aplica, a API ainda não):** 5 contatos contando os convites pendentes (CA3) e 3 pedidos de ajuda por hora (CA7). No quarto pedido, o app explica e diz que **não foi enviado**.
+- **Sem internet (CA8):** o app diz na hora que o pedido não foi enviado, nunca mostra "enviado".
+- **Pedido de ajuda:** vai com a posição **arredondada para cerca de 100 m** (endereço aproximado) e uma chave de idempotência reaproveitada por 120 s, para um toque repetido não virar dois pedidos. A tela mostra a situação sem prometer entrega ("o aviso saiu", nunca "recebido").
+- **Mensagem (CA5):** convite e pedido não pedem login, senha, dinheiro nem instalação e terminam com "Se não reconhece, ignore".
+- **Push:** depois de entrar, o app registra o token Expo do aparelho na API (`PUT /v1/push/tokens`), e tocar no aviso abre o pedido. Precisa de development build com projeto EAS (`extra.eas.projectId`); sem isso, o contato vê o pedido em **Contatos > Pedidos de ajuda recebidos**.
+- **Estado da API:** contatos, convites e push já estão na API do Abner; o pânico (`/v1/panico`) ainda está no mock do Prism. Para testar os dois juntos, rode o Prism na porta 4010 (`npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0`) e ponha no `.env` também `EXPO_PUBLIC_PANICO_URL=http://IP-DO-PC:4010`. Sem essa variável, o pânico usa o `EXPO_PUBLIC_API_URL`.
 
 ### Parear hoodi Pet e hoodi Pet conectado (F06)
 

@@ -36,16 +36,21 @@ export type OpcoesChamada = {
   corpo?: unknown;
   /** Access token (JWT). Use chamarAutenticado em vez de passar à mão. */
   token?: string;
+  /** Outro endereço base (ex.: mock do Prism para rotas que a API ainda não tem). Padrão: API_URL. */
+  base?: string;
 };
 
-export async function chamarApi<T>(caminho: string, { metodo = 'GET', corpo, token }: OpcoesChamada = {}): Promise<T> {
-  if (!API_URL) throw new ErroApi('sem-servidor');
+export async function chamarApi<T>(
+  caminho: string,
+  { metodo = 'GET', corpo, token, base = API_URL }: OpcoesChamada = {},
+): Promise<T> {
+  if (!base) throw new ErroApi('sem-servidor');
 
   const controle = new AbortController();
   const timer = setTimeout(() => controle.abort(), TEMPO_LIMITE_MS);
   let resposta: Response;
   try {
-    resposta = await fetch(`${API_URL}${caminho}`, {
+    resposta = await fetch(`${base}${caminho}`, {
       method: metodo,
       headers: {
         Accept: 'application/json',
