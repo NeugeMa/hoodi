@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CabecalhoVoltar } from '@/components/pet/cabecalho-voltar';
@@ -8,6 +8,7 @@ import { TelaPet } from '@/components/pet/tela-pet';
 import { Texto } from '@/components/ui/texto';
 import type { Carinha } from '@/features/pet/carinhas';
 import { espaco, raio, sombra } from '@/theme/tokens';
+import { useTecladoAberto } from '@/hooks/use-teclado-aberto';
 import { useTema } from '@/theme/use-tema';
 
 type Props = {
@@ -32,18 +33,23 @@ type Props = {
 /**
  * Molde das telas de conta (F01), no mesmo estilo do resto do app:
  * em cima, o título; embaixo, um painel arredondado com os campos e os botões no rodapé.
- * O teclado empurra o painel para cima, sem esconder o campo nem o botão.
+ *
+ * Com o teclado aberto, a tela abre espaço para o que está sendo escrito:
+ * o Pet encolhe e vai para o lado da marca, a frase some e os botões do rodapé saem
+ * (voltam quando o teclado fecha; o "ir" do teclado também envia).
+ * No iPhone, a lista rola sozinha para o campo com foco ficar acima do teclado.
  */
 export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, carinha, ocultarTitulo }: Props) {
   const { cores, escuro } = useTema();
   const insets = useSafeAreaInsets();
+  const teclado = useTecladoAberto();
+  const ios = Platform.OS === 'ios';
+  const paddingRodape = { paddingBottom: insets.bottom + espaco[3] };
 
   if (carinha) {
     return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
-        <View style={styles.topoMascote}>
+      <View style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
+        <View style={[styles.topoMascote, teclado ? styles.topoCompacto : null]}>
           {/* Mesma marca em todas as telas de conta: logo e "hoodi", com o voltar ao lado quando há. */}
           <View style={styles.barra}>
             {voltar ? <CabecalhoVoltar titulo={titulo} /> : null}
@@ -59,11 +65,18 @@ export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, 
               />
               <Texto variante="subtitulo">Hoodi</Texto>
             </View>
+            {teclado ? (
+              <View style={styles.mascotePequeno}>
+                <TelaPet carinha={carinha} corMoldura={cores.grafiteApagado} compacta />
+              </View>
+            ) : null}
           </View>
-          <View style={styles.mascote}>
-            <TelaPet carinha={carinha} corMoldura={cores.grafiteApagado} />
-          </View>
-          <View style={styles.textosCentro}>
+          {!teclado ? (
+            <View style={styles.mascote}>
+              <TelaPet carinha={carinha} corMoldura={cores.grafiteApagado} />
+            </View>
+          ) : null}
+          <View style={[styles.textosCentro, teclado ? styles.oculto : null]}>
             {ocultarTitulo ? (
               <Texto variante="titulo" style={styles.oculto}>
                 {titulo}
@@ -85,26 +98,24 @@ export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, 
           <ScrollView
             contentContainerStyle={[styles.conteudo, styles.conteudoMascote]}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={ios ? 'interactive' : 'on-drag'}
+            automaticallyAdjustKeyboardInsets={ios}
             showsVerticalScrollIndicator={false}>
             {children}
           </ScrollView>
-          {rodape ? (
-            <View style={[styles.rodapeMascote, { paddingBottom: insets.bottom + espaco[3] }]}>{rodape}</View>
-          ) : null}
+          {rodape && !teclado ? <View style={[styles.rodapeMascote, paddingRodape]}>{rodape}</View> : null}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
-      <View style={styles.topo}>
+    <View style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
+      <View style={[styles.topo, teclado ? styles.topoCompacto : null]}>
         {voltar ? <CabecalhoVoltar titulo={titulo} /> : null}
         <View style={styles.textos}>
           <Texto variante="titulo">{titulo}</Texto>
-          {subtitulo ? <Texto variante="legenda">{subtitulo}</Texto> : null}
+          {subtitulo && !teclado ? <Texto variante="legenda">{subtitulo}</Texto> : null}
         </View>
       </View>
 
@@ -113,16 +124,16 @@ export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, 
         <ScrollView
           contentContainerStyle={styles.conteudo}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={ios ? 'interactive' : 'on-drag'}
+          automaticallyAdjustKeyboardInsets={ios}
           showsVerticalScrollIndicator={false}>
           {children}
         </ScrollView>
-        {rodape ? (
-          <View style={[styles.rodape, { borderTopColor: cores.linha, paddingBottom: insets.bottom + espaco[3] }]}>
-            {rodape}
-          </View>
+        {rodape && !teclado ? (
+          <View style={[styles.rodape, paddingRodape, { borderTopColor: cores.linha }]}>{rodape}</View>
         ) : null}
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -133,6 +144,9 @@ const styles = StyleSheet.create({
   marca: { flexDirection: 'row', alignItems: 'center', gap: espaco[2] },
   logo: { width: 32, height: 32 },
   mascote: { alignSelf: 'center', width: 168 },
+  // Teclado aberto: o Pet vai para a direita da marca, pequeno, e o topo encolhe.
+  mascotePequeno: { marginLeft: 'auto', width: 76 },
+  topoCompacto: { paddingBottom: espaco[3], gap: 0 },
   textosCentro: { gap: espaco[1], alignItems: 'center' },
   centro: { textAlign: 'center' },
   // Fora da tela, mas lido pelo leitor de tela como cabeçalho.

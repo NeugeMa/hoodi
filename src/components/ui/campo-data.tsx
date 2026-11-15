@@ -1,6 +1,6 @@
 import RNDateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CalendarBlank, WarningCircle } from '@/components/icones';
@@ -39,6 +39,8 @@ export function CampoData({ rotulo, valor, aoMudar, erro, ajuda, inicial, maxima
   const [rascunho, setRascunho] = useState<Date>(valor ?? inicial ?? new Date());
 
   function abrir() {
+    // Fecha o teclado do campo anterior para o calendário ter a tela inteira.
+    Keyboard.dismiss();
     aoAbrir?.();
     const atual = valor ?? inicial ?? new Date();
     if (Platform.OS === 'android') {
