@@ -11,8 +11,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { AvisoRisco } from '@/components/alerta/aviso-risco';
+import { usePushPedidosAjuda } from '@/features/ajuda/push';
 import { AcompanhamentoProvider } from '@/features/alerta/acompanhamento-context';
 import { ContaProvider, useConta } from '@/features/conta/conta-context';
+import { ContatosProvider } from '@/features/contatos/contatos-context';
 import { GradeProvider } from '@/features/grade/grade-context';
 import { PetProvider } from '@/features/pet/pet-context';
 import { TrajetoProvider } from '@/features/trajeto/trajeto-context';
@@ -43,13 +45,15 @@ export default function RootLayout() {
       <ContaProvider>
         <GradeProvider>
           <TrajetoProvider>
-            <PetProvider>
-              <AcompanhamentoProvider>
-                <Navegacao />
-                {/* Alerta de risco por cima de qualquer tela (F07). */}
-                <AvisoRisco />
-              </AcompanhamentoProvider>
-            </PetProvider>
+            <ContatosProvider>
+              <PetProvider>
+                <AcompanhamentoProvider>
+                  <Navegacao />
+                  {/* Alerta de risco por cima de qualquer tela (F07). */}
+                  <AvisoRisco />
+                </AcompanhamentoProvider>
+              </PetProvider>
+            </ContatosProvider>
           </TrajetoProvider>
         </GradeProvider>
       </ContaProvider>
@@ -65,6 +69,8 @@ export default function RootLayout() {
 function Navegacao() {
   const { estado } = useConta();
   const logado = estado === 'logado';
+  // Push dos pedidos de ajuda (F09): registra o aparelho e abre o pedido ao tocar no aviso.
+  usePushPedidosAjuda(logado);
 
   useEffect(() => {
     if (estado !== 'carregando') SplashScreen.hideAsync();
@@ -80,10 +86,15 @@ function Navegacao() {
         <Stack.Screen name="pet/parear" />
         <Stack.Screen name="pet/conectado" />
         <Stack.Screen name="relogio" />
+        <Stack.Screen name="contatos" />
+        <Stack.Screen name="pedir-ajuda" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="ajuda/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!logado}>
         <Stack.Screen name="(conta)" />
       </Stack.Protected>
+      {/* Fora das proteções para o link do convite não se perder sem conta (a tela explica). */}
+      <Stack.Screen name="convite" />
     </Stack>
   );
 }

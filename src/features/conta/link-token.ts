@@ -1,11 +1,13 @@
 /**
- * Tira o token de um link do e-mail (hoodi://confirmar#token=... ou hoodi://redefinir-senha#token=...).
- * Aceita também o token puro, para quem colar só ele.
+ * Tira um valor do "#" de um link do hoodi:
+ * - token: hoodi://confirmar#token=... e hoodi://redefinir-senha#token=... (e-mail)
+ * - codigo: hoodi://convite#codigo=... (convite de contato, F09)
+ * Aceita também o valor puro, para quem colar só ele.
  */
-export function extrairToken(texto: string | null | undefined): string | null {
+function extrairDoLink(texto: string | null | undefined, chave: string, puro: RegExp): string | null {
   if (!texto) return null;
   const limpo = texto.trim();
-  const achado = /[#?&]token=([^&\s]+)/.exec(limpo);
+  const achado = new RegExp(`[#?&]${chave}=([^&\\s]+)`).exec(limpo);
   if (achado) {
     try {
       return decodeURIComponent(achado[1]);
@@ -13,6 +15,16 @@ export function extrairToken(texto: string | null | undefined): string | null {
       return achado[1];
     }
   }
-  // Token puro: sem espaços e com o tamanho mínimo da API.
-  return /^[^\s:/#?]{32,512}$/.test(limpo) ? limpo : null;
+  return puro.test(limpo) ? limpo : null;
+}
+
+/** Token do e-mail: sem espaços e com o tamanho mínimo da API. */
+export function extrairToken(texto: string | null | undefined) {
+  return extrairDoLink(texto, 'token', /^[^\s:/#?]{32,512}$/);
+}
+
+/** Código do convite: 64 caracteres hexadecimais (a API normaliza para maiúsculas). */
+export function extrairCodigoConvite(texto: string | null | undefined) {
+  const codigo = extrairDoLink(texto, 'codigo', /^[0-9A-Fa-f]{64}$/);
+  return codigo && /^[0-9A-Fa-f]{64}$/.test(codigo) ? codigo.toUpperCase() : null;
 }
