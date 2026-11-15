@@ -63,8 +63,8 @@ export default function RootLayout() {
 }
 
 /**
- * Sem conta: só as telas de conta (F01). Com conta: o app.
- * Ao entrar ou sair, o Stack.Protected troca de grupo sozinho e apaga o histórico do outro.
+ * O app abre sempre no Início. Sem conta, dá para usar Início, Mapa, Histórico e o hoodi Pet;
+ * Contatos e Pedir ajuda pedem para entrar (F01). O Stack.Protected cuida dos desvios.
  */
 function Navegacao() {
   const { estado } = useConta();
@@ -81,15 +81,18 @@ function Navegacao() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      {/* O app abre sempre no Início, com ou sem conta. */}
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="pet/parear" />
+      <Stack.Screen name="pet/conectado" />
+      <Stack.Screen name="relogio" />
+      {/* Só o que depende da conta pede login (contatos e pedido de ajuda, F09). */}
       <Stack.Protected guard={logado} redirectTo="/entrar">
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="pet/parear" />
-        <Stack.Screen name="pet/conectado" />
-        <Stack.Screen name="relogio" />
         <Stack.Screen name="contatos" />
         <Stack.Screen name="pedir-ajuda" options={{ presentation: 'modal' }} />
         <Stack.Screen name="ajuda/[id]" />
       </Stack.Protected>
+      {/* Telas de conta só sem conta; ao entrar, saem sozinhas e o app volta para onde estava. */}
       <Stack.Protected guard={!logado}>
         <Stack.Screen name="(conta)" />
       </Stack.Protected>

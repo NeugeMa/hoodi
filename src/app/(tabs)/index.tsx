@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { AccessibilityInfo, Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Alert, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BotaoPedirAjuda } from '@/components/inicio/botao-pedir-ajuda';
@@ -17,6 +17,9 @@ import { explicacaoDaPosicao } from '@/features/trajeto/textos';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio, sombra } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
+
+/** Pré-visualização no navegador (expo start --web). */
+const NO_NAVEGADOR = Platform.OS === 'web';
 
 function textoContatos(n: number) {
   if (n === 0) return 'Você ainda não tem contatos confirmados.';
@@ -57,7 +60,7 @@ export default function InicioScreen() {
     // Ações que desligam algo sempre pedem confirmação (design system v3).
     Alert.alert(
       'Encerrar trajeto?',
-      'O relógio e o hoodi Pet deixam de receber alertas deste trajeto.',
+      'O relógio e o Hoodi Pet deixam de receber alertas deste trajeto.',
       [
         { text: 'Agora não', style: 'cancel' },
         {
@@ -92,11 +95,18 @@ export default function InicioScreen() {
             <Aviso
               icone={MapPin}
               titulo={permissao === 'negada' ? 'Localização desligada' : 'Permita a localização'}
-              texto="O hoodi usa sua posição só no aparelho, para mostrar o risco onde você está e avisar quando ele sobe."
+              texto={
+                permissao === 'negada' && NO_NAVEGADOR
+                  ? 'O Hoodi usa sua posição só no aparelho. Para ligar, permita a localização para este site no cadeado ao lado do endereço e toque em Tentar de novo.'
+                  : 'O Hoodi usa sua posição só no aparelho, para mostrar o risco onde você está e avisar quando ele sobe.'
+              }
               acao={
-                permissao === 'negada'
-                  ? { rotulo: 'Abrir configurações', onPress: () => Linking.openSettings() }
-                  : { rotulo: 'Permitir localização', onPress: pedirLocalizacao }
+                permissao !== 'negada'
+                  ? { rotulo: 'Permitir localização', onPress: pedirLocalizacao }
+                  : NO_NAVEGADOR
+                    ? // O navegador não tem "configurações do app" para abrir (Linking.openSettings não existe na web).
+                      { rotulo: 'Tentar de novo', onPress: pedirLocalizacao }
+                    : { rotulo: 'Abrir configurações', onPress: () => Linking.openSettings() }
               }
             />
           ) : null}

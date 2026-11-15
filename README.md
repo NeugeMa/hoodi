@@ -108,6 +108,8 @@ Regras que o código já aplica:
 
 Regras visuais combinadas pela equipe (além do v3):
 
+- **"Hoodi" com H maiúsculo** em todos os textos do app (inclui "Hoodi Pet"). Identificadores técnicos continuam minúsculos: `hoodi://`, chaves de armazenamento e o nome que o Pet anuncia no Bluetooth (`hoodi Pet XXXX`, vem do firmware).
+
 - **Ícones Phosphor** em vez de Lucide.
 - **Sombra sutil e borda limpa** nos cards (token `sombra.suave` + borda de 1px em `linha`). **Nada de gradientes.**
 - **Micro-interações com Lottie**, com animações aprovadas antes de entrar.
@@ -232,14 +234,14 @@ Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nan
 
 ### Cadastro e acesso (F01)
 
-Ligado à API .NET (`/v1/auth`). Sem conta, o app só mostra as telas de conta; com conta, só o app. Quem faz essa troca é o `Stack.Protected` em [`src/app/_layout.tsx`](src/app/_layout.tsx).
+Ligado à API .NET (`/v1/auth`). **O app abre sempre no Início**, com ou sem conta: Início, Mapa, Histórico, relógio e Hoodi Pet funcionam sem conta. Só Contatos de segurança e Pedir ajuda pedem para entrar; o Perfil, sem conta, mostra **Entrar** e **Criar conta**. Quem faz esses desvios é o `Stack.Protected` em [`src/app/_layout.tsx`](src/app/_layout.tsx). A sessão fica salva: depois de entrar uma vez, o app continua logado ao abrir de novo.
 
 | Tela | Rota | O que faz | QA |
 |---|---|---|---|
 | Criar conta | `/criar-conta` | Nome, data de nascimento (calendário), e-mail, senha e o consentimento, que começa desmarcado. Menos de 18 anos não avança | CA1, CA5, CA6, CA7, TC01, TC04 |
-| Confira seu e-mail | `/verificar-email` | Avisa que o link foi enviado, pede outro e oferece Entrar | CA2 |
+| Enviamos um link | `/verificar-email` | Logo depois de Criar conta: avisa que o link foi enviado para o e-mail, pede outro e oferece Entrar | CA2 |
 | Confirmar | `/confirmar` | Aberta pelo link `hoodi://confirmar#token=...`: cria a conta com o nome e a senha do Criar conta e já entra. Se o app foi fechado no meio, pede a senha de novo | CA1 |
-| Entrar | `/entrar` | **Primeira tela sem conta.** E-mail e senha, "Esqueci a senha" e, embaixo, "Ainda não tem conta? Criar conta". Erro em texto: "E-mail ou senha incorretos". Traz também a frase do que o hoodi faz e que o risco é o melhor dado disponível no período (F02 CA1) | CA3, CA4, TC03 |
+| Entrar | `/entrar` | Abre por cima do app (Perfil, Pedir ajuda, Contatos). E-mail e senha, "Esqueci a senha" e, embaixo, "Ainda não tem conta? Criar conta". Erro em texto: "E-mail ou senha incorretos". Traz também a frase do que o hoodi faz e que o risco é o melhor dado disponível no período (F02 CA1) | CA3, CA4, TC03 |
 | Esqueci a senha | `/esqueci-senha` e `/redefinir-senha` | Link `hoodi://redefinir-senha#token=...` e senha nova | — |
 | Sair | Perfil | Com confirmação; avisa o servidor e apaga a sessão do aparelho | F08 CA6 |
 

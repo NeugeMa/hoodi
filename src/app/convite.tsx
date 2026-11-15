@@ -80,8 +80,8 @@ export default function ConviteScreen() {
         rodape={<Botao rotulo="Entrar ou criar conta" onPress={() => router.replace('/entrar')} />}>
         <Aviso
           icone={ShieldCheck}
-          titulo="Entre no hoodi para responder"
-          texto="Para ser contato de segurança, você precisa de uma conta no hoodi. Depois de entrar, abra o link do convite de novo."
+          titulo="Entre no Hoodi para responder"
+          texto="Para ser contato de segurança, você precisa de uma conta no Hoodi. Depois de entrar, abra o link do convite de novo."
         />
       </TelaConta>
     );
@@ -108,7 +108,7 @@ export default function ConviteScreen() {
             icone={CheckCircle}
             tom="sucesso"
             titulo={`Você é contato de ${resultado.nome}`}
-            texto="Se essa pessoa apertar Pedir ajuda, você recebe um aviso do hoodi. Você pode sair quando quiser, em Contatos."
+            texto="Se essa pessoa apertar Pedir ajuda, você recebe um aviso do Hoodi. Você pode sair quando quiser, em Contatos."
           />
         ) : (
           <Aviso icone={CheckCircle} titulo="Convite recusado" texto="Você não vai receber os pedidos de ajuda desta pessoa." />
@@ -120,7 +120,7 @@ export default function ConviteScreen() {
   return (
     <TelaConta
       titulo="Convite de contato"
-      subtitulo="Alguém de confiança quer você como contato de segurança no hoodi."
+      subtitulo="Alguém de confiança quer você como contato de segurança no Hoodi."
       rodape={
         <>
           <Botao rotulo={enviando === 'aceitar' ? 'Aceitando' : 'Aceitar'} onPress={() => responder('aceitar')} desabilitado={!!enviando} />

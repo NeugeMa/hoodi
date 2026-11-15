@@ -41,14 +41,14 @@ export default function ParearPetScreen() {
   return (
     <View style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
       <View style={styles.topo}>
-        <CabecalhoVoltar titulo="Conectar hoodi Pet" />
+        <CabecalhoVoltar titulo="Conectar Hoodi Pet" />
         {/* Radar de busca (Lottie): roda enquanto procura o Pet. */}
         <View style={styles.animacao}>
           <AnimacaoBusca ativo={buscando} />
         </View>
         <View style={styles.textos}>
           <Texto variante="titulo" style={styles.centro}>
-            Aproxime o hoodi Pet
+            Aproxime o Hoodi Pet
           </Texto>
           <Texto variante="legenda" style={styles.centro}>
             Deixe o Pet ligado e perto do celular.
@@ -112,13 +112,13 @@ function EstadoBusca() {
       <Aviso
         icone={BluetoothSlash}
         titulo="O Bluetooth precisa do app instalado"
-        texto="O Expo Go não tem Bluetooth. Para parear o hoodi Pet, use o development build do hoodi."
+        texto="O Expo Go não tem Bluetooth. Para parear o Hoodi Pet, use o development build do Hoodi."
       />
     );
   }
   if (suporte === 'web') {
     return (
-      <Aviso icone={BluetoothSlash} titulo="Sem Bluetooth no navegador" texto="Para parear o hoodi Pet, abra o app no celular." />
+      <Aviso icone={BluetoothSlash} titulo="Sem Bluetooth no navegador" texto="Para parear o Hoodi Pet, abra o app no celular." />
     );
   }
   if (bluetooth === 'sem-permissao') {
@@ -126,7 +126,7 @@ function EstadoBusca() {
       <Aviso
         icone={BluetoothSlash}
         titulo="Permita o Bluetooth"
-        texto="O hoodi precisa do Bluetooth para encontrar o Pet e mandar os avisos para ele."
+        texto="O Hoodi precisa do Bluetooth para encontrar o Pet e mandar os avisos para ele."
         acao={{ rotulo: 'Permitir', onPress: iniciarBusca }}
       />
     );
@@ -136,7 +136,7 @@ function EstadoBusca() {
       <Aviso
         icone={BluetoothSlash}
         titulo="Ligue o Bluetooth"
-        texto="Ative o Bluetooth do celular para procurar o hoodi Pet."
+        texto="Ative o Bluetooth do celular para procurar o Hoodi Pet."
       />
     );
   }
@@ -148,7 +148,7 @@ function EstadoBusca() {
       <Aviso
         icone={WarningCircle}
         tom="atencao"
-        titulo="Nenhum hoodi Pet encontrado"
+        titulo="Nenhum Hoodi Pet encontrado"
         texto="Confira se o Pet está ligado, com bateria e a menos de 1 m do celular."
         acao={{ rotulo: 'Procurar de novo', onPress: iniciarBusca }}
       />

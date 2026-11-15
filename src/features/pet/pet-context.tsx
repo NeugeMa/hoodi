@@ -189,7 +189,7 @@ export function PetProvider({ children }: { children: ReactNode }) {
       try {
         await enviarComando(pareado.dispositivoId, deHex(pareado.tokenHex), cmd, arg);
       } catch {
-        setErro('O hoodi Pet não respondeu. Veja se ele está ligado e perto.');
+        setErro('O Hoodi Pet não respondeu. Veja se ele está ligado e perto.');
       }
     },
     [pareado, conectado],

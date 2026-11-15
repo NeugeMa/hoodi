@@ -25,6 +25,8 @@ type Props = {
    * A carinha reage ao que a pessoa faz (ex.: fecha os olhos enquanto ela digita a senha).
    */
   carinha?: Carinha;
+  /** Não mostra o título na tela (o leitor de tela continua anunciando). Ex.: Entrar. */
+  ocultarTitulo?: boolean;
 };
 
 /**
@@ -32,7 +34,7 @@ type Props = {
  * em cima, o título; embaixo, um painel arredondado com os campos e os botões no rodapé.
  * O teclado empurra o painel para cima, sem esconder o campo nem o botão.
  */
-export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, carinha }: Props) {
+export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, carinha, ocultarTitulo }: Props) {
   const { cores, escuro } = useTema();
   const insets = useSafeAreaInsets();
 
@@ -45,7 +47,7 @@ export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, 
           {/* Mesma marca em todas as telas de conta: logo e "hoodi", com o voltar ao lado quando há. */}
           <View style={styles.barra}>
             {voltar ? <CabecalhoVoltar titulo={titulo} /> : null}
-            <View style={styles.marca} accessible accessibilityRole="header" accessibilityLabel="hoodi">
+            <View style={styles.marca} accessible accessibilityRole="header" accessibilityLabel="Hoodi">
               <Image
                 source={
                   escuro
@@ -55,16 +57,22 @@ export function TelaConta({ titulo, subtitulo, voltar = true, children, rodape, 
                 contentFit="contain"
                 style={styles.logo}
               />
-              <Texto variante="subtitulo">hoodi</Texto>
+              <Texto variante="subtitulo">Hoodi</Texto>
             </View>
           </View>
           <View style={styles.mascote}>
             <TelaPet carinha={carinha} corMoldura={cores.grafiteApagado} />
           </View>
           <View style={styles.textosCentro}>
-            <Texto variante="titulo" style={styles.centro}>
-              {titulo}
-            </Texto>
+            {ocultarTitulo ? (
+              <Texto variante="titulo" style={styles.oculto}>
+                {titulo}
+              </Texto>
+            ) : (
+              <Texto variante="titulo" style={styles.centro}>
+                {titulo}
+              </Texto>
+            )}
             {subtitulo ? (
               <Texto variante="legenda" style={styles.centro}>
                 {subtitulo}
@@ -127,6 +135,8 @@ const styles = StyleSheet.create({
   mascote: { alignSelf: 'center', width: 168 },
   textosCentro: { gap: espaco[1], alignItems: 'center' },
   centro: { textAlign: 'center' },
+  // Fora da tela, mas lido pelo leitor de tela como cabeçalho.
+  oculto: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
   conteudoMascote: { paddingTop: espaco[6], gap: espaco[4] },
   rodapeMascote: { paddingHorizontal: espaco[4], paddingTop: espaco[2], gap: espaco[2] },
   topo: { paddingHorizontal: espaco[4], paddingBottom: espaco[6], gap: espaco[4] },

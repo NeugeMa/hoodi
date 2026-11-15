@@ -49,7 +49,7 @@ export function TelaPet({ carinha, corMoldura }: Props) {
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={`Carinha do hoodi Pet: ${NOME_CARINHA[carinha]}`}
+      accessibilityLabel={`Carinha do Hoodi Pet: ${NOME_CARINHA[carinha]}`}
       style={[styles.moldura, { borderColor: corMoldura }]}>
       <View style={styles.tela}>
         <Svg width="100%" height="100%" viewBox={`0 0 ${LARGURA} ${ALTURA}`}>

@@ -11,10 +11,10 @@ import { Texto } from '@/components/ui/texto';
 import { ErroApi, mensagemDeFalha } from '@/features/api/cliente';
 import { confirmarEmail } from '@/features/conta/auth-api';
 import { cadastroGuardado, esquecerCadastro } from '@/features/conta/cadastro-pendente';
+import { carinhaDaConta } from '@/features/conta/carinha-conta';
 import { useConta } from '@/features/conta/conta-context';
 import { NOME_MIN, SENHA_MIN } from '@/features/conta/tipos';
 import { useTokenDoLink } from '@/features/conta/use-token-do-link';
-import type { Carinha } from '@/features/pet/carinhas';
 import { lerPreferencia, PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 
 type Resultado = 'link-invalido' | { falha: string } | null;
@@ -127,20 +127,14 @@ export default function ConfirmarScreen() {
     return (
       <TelaConta titulo="Criando sua conta" voltar={false} carinha="procurando">
         <Texto variante="legenda" style={estilos.centro}>
-          Só um instante. Depois você já entra no hoodi.
+          Só um instante. Depois você já entra no Hoodi.
         </Texto>
       </TelaConta>
     );
   }
 
   const falha = resultado ? resultado.falha : null;
-  const carinha: Carinha = enviando
-    ? 'procurando'
-    : erroNome || erroSenha || falha
-      ? 'confusa'
-      : focoSenha
-        ? 'timida'
-        : 'tranquila';
+  const carinha = carinhaDaConta({ enviando, erro: !!(erroNome || erroSenha || falha), campo: focoSenha ? 'senha' : null });
 
   return (
     <TelaConta

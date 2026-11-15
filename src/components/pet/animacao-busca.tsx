@@ -62,7 +62,7 @@ export function AnimacaoBusca({ ativo }: Props) {
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={ativo ? 'Procurando o hoodi Pet' : 'Busca parada'}
+      accessibilityLabel={ativo ? 'Procurando o Hoodi Pet' : 'Busca parada'}
       style={styles.caixa}>
       <LottieView ref={ref} source={fonte as AnimationObject} autoPlay={ativo && !reduzir} loop style={styles.animacao} />
     </View>

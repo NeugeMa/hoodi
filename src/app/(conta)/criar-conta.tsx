@@ -14,15 +14,15 @@ import { Texto } from '@/components/ui/texto';
 import { ehErroHttp, mensagemDeFalha } from '@/features/api/cliente';
 import { registrar } from '@/features/conta/auth-api';
 import { guardarCadastro, IDADE_MINIMA, idadeEm } from '@/features/conta/cadastro-pendente';
+import { carinhaDaConta } from '@/features/conta/carinha-conta';
 import { emailValido, NOME_MIN, SENHA_MIN } from '@/features/conta/tipos';
-import type { Carinha } from '@/features/pet/carinhas';
 import { PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 import { espaco, raio } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
 /** Texto do consentimento (F01 CA5): linguagem simples, o que fica no aparelho e o que sai. */
 const CONSENTIMENTO = [
-  'Sua localização é avaliada só neste celular. O hoodi não envia sua posição para ninguém.',
+  'Sua localização é avaliada só neste celular. O Hoodi não envia sua posição para ninguém.',
   'Seu trajeto e o histórico de alertas também ficam só no aparelho.',
   'Nada sai do celular sem você apertar Pedir ajuda. Aí seus contatos confirmados recebem seu nome, a hora e o endereço aproximado.',
   'O risco vem de registros públicos da SSP-SP. Você pode revogar este consentimento e excluir a conta no Perfil.',
@@ -67,7 +67,7 @@ export default function CriarContaScreen() {
     if (nome.trim().length < NOME_MIN) novos.nome = `Escreva pelo menos ${NOME_MIN} letras.`;
     if (!nascimento) novos.nascimento = 'Escolha sua data de nascimento.';
     else if (idadeEm(nascimento) < IDADE_MINIMA)
-      novos.nascimento = `O hoodi é para quem tem ${IDADE_MINIMA} anos ou mais. Por isso, não dá para criar a conta.`;
+      novos.nascimento = `O Hoodi é para quem tem ${IDADE_MINIMA} anos ou mais. Por isso, não dá para criar a conta.`;
     if (!emailValido(email)) novos.email = ERRO_EMAIL;
     if (senha.length < SENHA_MIN) novos.senha = `A senha precisa ter pelo menos ${SENHA_MIN} caracteres.`;
     setErros(novos);
@@ -97,21 +97,14 @@ export default function CriarContaScreen() {
   }
 
   const temErro = Object.values(erros).some(Boolean) || !!falha;
-  // O Pet reage: atento nos campos, olhos fechados na senha, confuso no erro.
-  const carinha: Carinha = enviando
-    ? 'procurando'
-    : temErro
-      ? 'confusa'
-      : foco === 'senha' && !mostrandoSenha
-        ? 'timida'
-        : foco
-          ? 'atenta'
-          : 'tranquila';
+  // Mesma carinha e mesmas reações do Entrar.
+  const carinha = carinhaDaConta({ enviando, erro: temErro, campo: foco, mostrandoSenha });
 
   return (
     <TelaConta
       titulo="Criar conta"
-      subtitulo="Leva um minuto. Depois, é só confirmar pelo link que chega no seu e-mail."
+      subtitulo="Alerta de risco sem tirar o celular do bolso."
+      ocultarTitulo
       carinha={carinha}
       rodape={
         <>
@@ -144,7 +137,6 @@ export default function CriarContaScreen() {
         aoFocar={() => setFoco('nome')}
         aoSair={() => setFoco((f) => (f === 'nome' ? null : f))}
         erro={erros.nome}
-        ajuda="Aparece para os seus contatos quando você pede ajuda."
         returnKeyType="next"
         submitBehavior="submit"
         onSubmitEditing={() => emailRef.current?.focus()}
@@ -158,7 +150,6 @@ export default function CriarContaScreen() {
         }}
         aoAbrir={() => setFoco(null)}
         erro={erros.nascimento}
-        ajuda="Usada só para confirmar que você tem 18 anos ou mais. Não fica guardada."
         inicial={DATA_INICIAL}
         maxima={hoje}
         minima={DATA_MINIMA}
@@ -194,14 +185,13 @@ export default function CriarContaScreen() {
         aoSair={() => setFoco((f) => (f === 'senha' ? null : f))}
         aoMostrarSenha={setMostrandoSenha}
         erro={erros.senha}
-        ajuda={`Use pelo menos ${SENHA_MIN} caracteres.`}
         returnKeyType="done"
       />
 
       <View style={[styles.consentimento, { backgroundColor: cores.papelRebaixado }]}>
         <View style={styles.tituloConsentimento}>
           <ShieldCheck size={22} color={cores.grafite} weight="bold" />
-          <Texto variante="subtitulo">Seus dados no hoodi</Texto>
+          <Texto variante="subtitulo">Seus dados no Hoodi</Texto>
         </View>
         {CONSENTIMENTO.map((frase) => (
           <Texto key={frase} variante="legenda" cor="grafite">

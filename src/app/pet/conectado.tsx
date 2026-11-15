@@ -36,7 +36,7 @@ export default function PetScreen() {
   function confirmarDesconectar() {
     // Ações que desligam algo sempre pedem confirmação (design system v3).
     Alert.alert(
-      'Desconectar o hoodi Pet?',
+      'Desconectar o Hoodi Pet?',
       'Ele deixa de receber os avisos. Para usar de novo, será preciso parear outra vez.',
       [
         { text: 'Agora não', style: 'cancel' },
@@ -45,7 +45,7 @@ export default function PetScreen() {
           style: 'destructive',
           onPress: async () => {
             await esquecer();
-            AccessibilityInfo.announceForAccessibility('hoodi Pet desconectado.');
+            AccessibilityInfo.announceForAccessibility('Hoodi Pet desconectado.');
             router.replace('/');
           },
         },
@@ -56,7 +56,7 @@ export default function PetScreen() {
   return (
     <View style={[styles.tela, { backgroundColor: cores.papel, paddingTop: insets.top + espaco[3] }]}>
       <View style={styles.topo}>
-        <CabecalhoVoltar titulo="hoodi Pet" />
+        <CabecalhoVoltar titulo="Hoodi Pet" />
         <Cartao style={styles.dispositivo}>
           <BlocoIcone
             icone={conectado ? Bluetooth : BluetoothSlash}
@@ -98,7 +98,7 @@ export default function PetScreen() {
           {!conectado ? (
             <Aviso
               icone={BluetoothSlash}
-              titulo="hoodi Pet fora de alcance"
+              titulo="Hoodi Pet fora de alcance"
               texto="Ligue o Pet e deixe perto do celular. Enquanto isso, a tela e o relógio continuam avisando."
             />
           ) : null}

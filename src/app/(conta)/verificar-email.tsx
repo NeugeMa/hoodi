@@ -44,9 +44,9 @@ export default function VerificarEmailScreen() {
 
   return (
     <TelaConta
-      titulo="Confira seu e-mail"
+      titulo="Enviamos um link para o seu e-mail"
       carinha="atenta"
-      subtitulo="Falta só confirmar: abra neste celular o link que enviamos para o seu e-mail."
+      subtitulo="Abra o link neste celular para confirmar a conta."
       rodape={
         <>
           <Botao

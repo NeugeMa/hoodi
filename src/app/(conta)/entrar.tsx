@@ -10,9 +10,9 @@ import { CampoTexto } from '@/components/ui/campo-texto';
 import { LinkTexto } from '@/components/ui/link-texto';
 import { Texto } from '@/components/ui/texto';
 import { ehErroHttp, mensagemDeFalha } from '@/features/api/cliente';
+import { carinhaDaConta } from '@/features/conta/carinha-conta';
 import { useConta } from '@/features/conta/conta-context';
 import { emailValido } from '@/features/conta/tipos';
-import type { Carinha } from '@/features/pet/carinhas';
 import { lerPreferencia, PREF } from '@/features/preferencias/preferencias-repo';
 import { espaco } from '@/theme/tokens';
 
@@ -22,7 +22,7 @@ const AVISOS: Record<string, { titulo: string; texto: string }> = {
 };
 
 /**
- * Entrar (F01 CA3, CA4, CA7 · TC03), a primeira tela de quem não tem conta neste celular.
+ * Entrar (F01 CA3, CA4, CA7 · TC03). Abre por cima do app (Perfil, Pedir ajuda, Contatos) e volta para ele.
  * O hoodi Pet no topo acompanha: olha o e-mail, fecha os olhos na senha e fica confuso no erro.
  * Erro em texto, sem dizer se o problema é o e-mail ou a senha (a API também não diz).
  */
@@ -65,16 +65,8 @@ export default function EntrarScreen() {
     }
   }
 
-  // O Pet reage ao que acontece na tela.
-  const carinha: Carinha = enviando
-    ? 'procurando'
-    : erroEmail || erroSenha || falha
-      ? 'confusa'
-      : foco === 'senha' && !mostrandoSenha
-        ? 'timida'
-        : foco
-          ? 'atenta'
-          : 'tranquila';
+  // O Pet reage ao que acontece na tela (mesma regra do Criar conta).
+  const carinha = carinhaDaConta({ enviando, erro: !!(erroEmail || erroSenha || falha), campo: foco, mostrandoSenha });
 
   const avisoInicial = aviso ? AVISOS[aviso] : undefined;
 
@@ -82,7 +74,7 @@ export default function EntrarScreen() {
     <TelaConta
       titulo="Entrar"
       subtitulo="Alerta de risco sem tirar o celular do bolso."
-      voltar={false}
+      ocultarTitulo
       carinha={carinha}
       rodape={
         <>
