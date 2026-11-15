@@ -48,7 +48,8 @@
           "locationWhenInUsePermission": "O hoodi usa sua localização, só no aparelho, para dizer o risco registrado onde você está e avisar quando ele sobe."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,5 +1,7 @@
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
 
+import { API_URL } from '@/features/api/cliente';
+
 import type { GradeRisco, ManifestoGrade } from './tipos';
 
 /**
@@ -7,7 +9,6 @@ import type { GradeRisco, ManifestoGrade } from './tipos';
  * Endereço da API: variável EXPO_PUBLIC_API_URL no arquivo .env.
  */
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 const TEMPO_LIMITE_MS = 10_000;
 
 export type FalhaDownload =

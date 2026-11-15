@@ -49,7 +49,8 @@ Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Ale
 - **Phosphor Icons** (`phosphor-react-native`) + **react-native-svg**: ícones com peso suave; peso "fill" na aba ativa. Todos os ícones são importados um a um em [`src/components/icones.ts`](src/components/icones.ts) para não carregar a biblioteca inteira
 - **expo-image**: logo
 - **expo-sqlite**: banco local, guarda a grade de risco para funcionar sem internet
-- **expo-crypto**: SHA-256 para conferir o arquivo da grade antes de usar
+- **expo-crypto**: SHA-256 para conferir o arquivo da grade antes de usar e id desta instalação
+- **expo-secure-store**: guarda os tokens da sessão no Keychain (iOS) e no Keystore (Android)
 - **react-native-maps**: mapa nativo (Google Maps no Android, Apple Maps no iOS)
 - **react-native-ble-plx**: Bluetooth Low Energy com o hoodi Pet (não funciona no Expo Go)
 - **expo-location**: posição para o alerta de risco (só no aparelho)
@@ -61,7 +62,8 @@ Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Ale
 ```
 src/
 ├── app/                    # Rotas (cada arquivo é uma tela)
-│   ├── _layout.tsx         # Raiz: fonte, tema claro/escuro e estado do trajeto
+│   ├── _layout.tsx         # Raiz: fonte, tema, conta (telas protegidas) e estado do trajeto
+│   ├── (conta)/            # Sem conta: Boas-vindas, Criar conta, Confirmar, Entrar, Esqueci a senha
 │   └── (tabs)/             # Barra de navegação
 │       ├── _layout.tsx     # Início, Mapa, Histórico e Perfil
 │       ├── index.tsx       # Início
@@ -77,6 +79,8 @@ src/
 │   └── risco/              # "Onde você está agora" e selo do nível (Início e Mapa)
 ├── db/                     # Banco local SQLite e migrações
 ├── features/
+│   ├── api/                # Cliente HTTP da API (endereço, erros problem+json)
+│   ├── conta/              # Sessão, login, cadastro em 2 etapas e renovação do token
 │   ├── grade/              # Grade de risco: download, checksum, banco local e geometria
 │   ├── historico/          # Histórico local de alertas (banco e agrupamento)
 │   ├── pet/                # Carinhas em pixel art e seus quadros
@@ -121,7 +125,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 
 | Feature | Telas | Responsável | Status |
 |---|---|---|---|
-| F01 · Cadastro e acesso | Criar conta, Entrar | Colega | A fazer |
+| F01 · Cadastro e acesso | Boas-vindas, Criar conta, Confirmar, Entrar, Esqueci a senha | Mari | **Pronto, ligado à API** |
 | F02 · Boas-vindas e permissões | Permissões | Colega | A fazer |
 | F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | **Pronto, aguardando a grade da API** |
 | F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
@@ -223,6 +227,33 @@ Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nan
 ```
 
 `limites` (latitude e longitude da célula) deixam o app desenhar a célula no mapa sem depender da escolha entre geohash e H3. O trajeto (F04) precisa mandar os pontos do caminho (`caminho: [{ latitude, longitude }]`) para o Mapa pintar cada trecho. Faixa ausente numa célula vale como **Sem dado**.
+
+### Cadastro e acesso (F01)
+
+Ligado à API .NET (`/v1/auth`). Sem conta, o app só mostra as telas de conta; com conta, só o app. Quem faz essa troca é o `Stack.Protected` em [`src/app/_layout.tsx`](src/app/_layout.tsx).
+
+| Tela | Rota | O que faz | QA |
+|---|---|---|---|
+| Boas-vindas | `/boas-vindas` | O que o hoodi faz, numa frase, e que o risco é o melhor dado disponível no período | F02 CA1 |
+| Criar conta | `/criar-conta` | E-mail, "Tenho 18 anos ou mais" e o consentimento, os dois desmarcados. O botão só libera com os dois marcados | CA1, CA5, CA6, TC01, TC04 |
+| Confira seu e-mail | `/verificar-email` | Avisa que o link foi enviado, pede outro e oferece Entrar | CA2 |
+| Confirmar | `/confirmar` | Aberta pelo link `hoodi://confirmar#token=...`: nome de tratamento e senha. Depois entra sozinho | CA1 |
+| Entrar | `/entrar` | E-mail e senha. Erro em texto: "E-mail ou senha incorretos" | CA3, CA4, TC03 |
+| Esqueci a senha | `/esqueci-senha` e `/redefinir-senha` | Link `hoodi://redefinir-senha#token=...` e senha nova | — |
+| Sair | Perfil | Com confirmação; avisa o servidor e apaga a sessão do aparelho | F08 CA6 |
+
+- **Cadastro em 2 etapas (como a API faz):** primeiro só o e-mail; a senha e o nome entram ao abrir o link do e-mail. A API responde igual exista ou não a conta, para não revelar quem usa o hoodi; por isso o "já existe conta" (CA2) vira o aviso e o botão Entrar da tela "Confira seu e-mail".
+- **Senha:** de 10 a 128 caracteres (regra da API), oculta por padrão, com **Mostrar**. Todos os campos têm rótulo visível e lido pelo leitor de tela (CA7).
+- **Consentimento:** a data em que a pessoa confirmou os 18 anos e aceitou fica salva no aparelho (`preferencias`). A API ainda não guarda o aceite.
+- **Sessão:** o access token dura 60 min e é renovado sozinho com o refresh token, uma renovação por vez ([`sessao.ts`](src/features/conta/sessao.ts)). Se a renovação for recusada, o app volta para Entrar. Os tokens ficam no **SecureStore**, nunca no SQLite.
+- **Link do e-mail no Expo Go:** o `hoodi://` só abre o app no development build. No Expo Go (ou com o e-mail aberto no computador), copie o link e cole no campo **Link do e-mail**.
+
+#### Rodar com a API local
+
+1. No PC: `dotnet run --project Hoodi.Api --urls http://0.0.0.0:5000` (repositório da API). Documentação em `http://IP-DO-PC:5000/scalar`.
+2. Na raiz deste app, crie o `.env` com `EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000` (o IP da máquina na rede, não `localhost`) e reinicie o `npm start`.
+3. O e-mail do cadastro cai no **Mailpit**: `http://localhost:8025` no PC.
+4. Partes da API que ainda não existem (grade, pânico, rotas, dispositivos) continuam no mock: `npx @stoplight/prism-cli mock contracts/openapi.yaml`.
 
 ### Parear hoodi Pet e hoodi Pet conectado (F06)
 
