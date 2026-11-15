@@ -7,4 +7,14 @@ export const PREF = {
   relogioOrientacaoVista: 'relogio_orientacao_vista',
   /** A pessoa confirmou que configurou as notificações no relógio. */
   relogioConfigurado: 'relogio_configurado',
+  /** E-mail do cadastro em andamento (etapa 1 feita, aguardando o link). Usado para entrar depois. */
+  cadastroEmail: 'cadastro_email',
+  /** Último e-mail que entrou, para preencher o campo de Entrar. */
+  ultimoEmail: 'ultimo_email',
+  /** Data ISO em que a pessoa confirmou ter 18 anos ou mais (F01 CA1, CA6). */
+  maioridadeConfirmadaEm: 'maioridade_confirmada_em',
+  /** Data ISO em que a pessoa aceitou o consentimento LGPD (F01 CA1, CA5). */
+  consentimentoEm: 'consentimento_em',
+  /** Identificador desta instalação do app (sair e token de push). */
+  instalacaoId: 'instalacao_id',
 } as const;
