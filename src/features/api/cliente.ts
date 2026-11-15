@@ -85,8 +85,8 @@ export async function chamarApi<T>(
 /** Texto para a pessoa, em linguagem simples, para falhas que não são de formulário. */
 export function mensagemDeFalha(e: unknown): string {
   if (e instanceof ErroApi) {
-    if (e.tipo === 'sem-servidor') return 'O endereço do servidor do hoodi não está configurado neste app.';
-    if (e.tipo === 'sem-internet') return 'Não foi possível falar com o hoodi. Confira sua internet e tente de novo.';
+    if (e.tipo === 'sem-servidor') return 'O endereço do servidor do Hoodi não está configurado neste app.';
+    if (e.tipo === 'sem-internet') return 'Não foi possível falar com o Hoodi. Confira sua internet e tente de novo.';
     if (e.status === 429) return 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.';
   }
   return 'Algo não funcionou. Tente de novo em instantes.';

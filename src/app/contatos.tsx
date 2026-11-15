@@ -22,8 +22,8 @@ import { useTema } from '@/theme/use-tema';
 /** Texto do convite: sem pedir login, senha, dinheiro nem instalação; termina com "Se não reconhece, ignore". */
 function textoDoConvite(convite: NovoConvite) {
   return (
-    'Quero você como meu contato de segurança no hoodi. Se eu apertar Pedir ajuda, você recebe um aviso ' +
-    `com meu nome, a hora e onde eu estou, mais ou menos. Abra este link no app hoodi: ${linkDoConvite(convite.codigo)} ` +
+    'Quero você como meu contato de segurança no Hoodi. Se eu apertar Pedir ajuda, você recebe um aviso ' +
+    `com meu nome, a hora e onde eu estou, mais ou menos. Abra este link no app Hoodi: ${linkDoConvite(convite.codigo)} ` +
     `O convite vale até ${horaCurta(convite.expiraEm)}. Se não reconhece, ignore.`
   );
 }
@@ -102,7 +102,7 @@ export default function ContatosScreen() {
   return (
     <TelaConta
       titulo="Contatos de segurança"
-      subtitulo="Quem recebe um aviso quando você aperta Pedir ajuda. A pessoa precisa ter o hoodi e aceitar o convite."
+      subtitulo="Quem recebe um aviso quando você aperta Pedir ajuda. A pessoa precisa ter o Hoodi e aceitar o convite."
       rodape={
         <>
           <Botao
@@ -144,7 +144,7 @@ export default function ContatosScreen() {
       <Secao titulo="Recebem seu pedido de ajuda">
         {meusContatos.length === 0 && convitesPendentes.length === 0 && carregado ? (
           <Texto variante="legenda">
-            Você ainda não tem contatos. Convide alguém de confiança que também use o hoodi.
+            Você ainda não tem contatos. Convide alguém de confiança que também use o Hoodi.
           </Texto>
         ) : null}
         {meusContatos.map((v) => (

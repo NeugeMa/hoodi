@@ -1,7 +1,7 @@
 import { useState, type Ref } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputInstance, type TextInputProps } from 'react-native';
 
-import { WarningCircle } from '@/components/icones';
+import { Eye, EyeSlash, WarningCircle, type Icon } from '@/components/icones';
 import { espaco, fontes, raio, tamanho } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
@@ -18,6 +18,12 @@ type Props = {
   /** Texto de apoio abaixo do campo (ex.: regra da senha). */
   ajuda?: string;
   ref?: Ref<TextInputInstance>;
+  /** Ícone à esquerda, dentro do campo (ex.: envelope no e-mail, cadeado na senha). */
+  icone?: Icon;
+  aoFocar?: () => void;
+  aoSair?: () => void;
+  /** Senha: avisa quando a pessoa toca em Mostrar ou Ocultar. */
+  aoMostrarSenha?: (mostrando: boolean) => void;
 } & Pick<TextInputProps, 'returnKeyType' | 'onSubmitEditing' | 'autoFocus' | 'submitBehavior' | 'editable'>;
 
 const CONFIG_TIPO: Record<NonNullable<Props['tipo']>, Partial<TextInputProps>> = {
@@ -35,10 +41,23 @@ const CONFIG_TIPO: Record<NonNullable<Props['tipo']>, Partial<TextInputProps>> =
 };
 
 /**
- * Campo de texto (design system v3): 56px, rótulo visível, senha com Mostrar,
+ * Campo de texto (design system v3): 56px, rótulo visível, senha com Mostrar (olho),
  * erro com contorno e mensagem. O erro de formulário é uma das exceções ao "vermelho é perigo".
  */
-export function CampoTexto({ rotulo, valor, aoMudar, tipo = 'texto', erro, ajuda, ref, ...resto }: Props) {
+export function CampoTexto({
+  rotulo,
+  valor,
+  aoMudar,
+  tipo = 'texto',
+  erro,
+  ajuda,
+  ref,
+  icone: Icone,
+  aoFocar,
+  aoSair,
+  aoMostrarSenha,
+  ...resto
+}: Props) {
   const { cores } = useTema();
   const [foco, setFoco] = useState(false);
   const [mostrar, setMostrar] = useState(false);
@@ -48,16 +67,27 @@ export function CampoTexto({ rotulo, valor, aoMudar, tipo = 'texto', erro, ajuda
 
   return (
     <View style={styles.campo}>
-      <Texto variante="corpoForte" accessible={false}>
+      <Texto variante="legenda" cor="grafite" accessible={false}>
         {rotulo}
       </Texto>
       <View style={[styles.caixa, { backgroundColor: cores.papelRebaixado, borderColor: borda }]}>
+        {Icone ? (
+          <View style={styles.icone}>
+            <Icone size={20} color={foco ? cores.grafite : cores.grafiteSuave} weight="bold" />
+          </View>
+        ) : null}
         <TextInput
           ref={ref}
           value={valor}
           onChangeText={aoMudar}
-          onFocus={() => setFoco(true)}
-          onBlur={() => setFoco(false)}
+          onFocus={() => {
+            setFoco(true);
+            aoFocar?.();
+          }}
+          onBlur={() => {
+            setFoco(false);
+            aoSair?.();
+          }}
           accessibilityLabel={rotulo}
           accessibilityHint={erro ?? ajuda}
           // Senha oculta por padrão (F01 CA7).
@@ -65,7 +95,7 @@ export function CampoTexto({ rotulo, valor, aoMudar, tipo = 'texto', erro, ajuda
           placeholderTextColor={cores.grafiteApagado}
           selectionColor={cores.grafite}
           maxFontSizeMultiplier={1.6}
-          style={[styles.entrada, { color: cores.grafite }]}
+          style={[styles.entrada, Icone ? styles.entradaComIcone : null, { color: cores.grafite }]}
           {...CONFIG_TIPO[tipo]}
           {...resto}
         />
@@ -73,12 +103,17 @@ export function CampoTexto({ rotulo, valor, aoMudar, tipo = 'texto', erro, ajuda
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={mostrar ? 'Ocultar senha' : 'Mostrar senha'}
-            onPress={() => setMostrar((m) => !m)}
+            onPress={() => {
+              setMostrar(!mostrar);
+              aoMostrarSenha?.(!mostrar);
+            }}
             hitSlop={4}
             style={styles.mostrar}>
-            <Texto variante="legenda" cor="grafite">
-              {mostrar ? 'Ocultar' : 'Mostrar'}
-            </Texto>
+            {mostrar ? (
+              <EyeSlash size={22} color={cores.grafite} weight="bold" />
+            ) : (
+              <Eye size={22} color={cores.grafite} weight="bold" />
+            )}
           </Pressable>
         ) : null}
       </View>
@@ -107,6 +142,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  icone: { paddingLeft: espaco[4] - 2 },
+  entradaComIcone: { paddingLeft: espaco[3] },
   entrada: {
     flex: 1,
     minHeight: tamanho.toquePrincipal - 4,

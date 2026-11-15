@@ -13,9 +13,9 @@ import { espaco, raio, sombra } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
 const PASSOS = [
-  'Ative as notificações do hoodi.',
+  'Ative as notificações do Hoodi.',
   'Escolha o háptico forte para elas.',
-  'Coloque o hoodi como exceção no modo Foco ou Não Perturbe.',
+  'Coloque o Hoodi como exceção no modo Foco ou Não Perturbe.',
 ];
 
 const OBSERVACAO =
@@ -52,7 +52,7 @@ export default function RelogioScreen() {
         <View style={styles.textos}>
           <Texto variante="titulo">Receba o aviso no pulso</Texto>
           <Texto variante="legenda">
-            O relógio mostra as notificações do hoodi. Faça isto uma vez no app do relógio:
+            O relógio mostra as notificações do Hoodi. Faça isto uma vez no app do relógio:
           </Texto>
         </View>
       </View>

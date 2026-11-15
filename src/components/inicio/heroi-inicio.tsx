@@ -42,15 +42,15 @@ export function HeroiInicio({ nivel, canais, onConectarPet, onConfigurarRelogio 
           onPress={canais.relogio ? undefined : onConfigurarRelogio}
         />
         <Canal
-          rotulo="hoodi Pet"
+          rotulo="Hoodi Pet"
           conectado={canais.pet}
           Icone={canais.pet ? Bluetooth : BluetoothSlash}
           a11y={
             canais.pet
-              ? 'hoodi Pet conectado'
+              ? 'Hoodi Pet conectado'
               : canais.petPareado
-                ? 'hoodi Pet reconectando. Toque para ver'
-                : 'hoodi Pet desconectado. Toque para conectar'
+                ? 'Hoodi Pet reconectando. Toque para ver'
+                : 'Hoodi Pet desconectado. Toque para conectar'
           }
           acao="Conectar"
           onPress={canais.pet ? undefined : onConectarPet}

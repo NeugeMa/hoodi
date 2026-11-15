@@ -118,7 +118,7 @@ export default function PedidoRecebidoScreen() {
           {pedido.observacao ? <Texto>{pedido.observacao}</Texto> : null}
 
           <Texto variante="legenda">
-            Tente falar com {pedido.titularNome}. O hoodi nunca pede login, senha, dinheiro nem instalação. Se não
+            Tente falar com {pedido.titularNome}. O Hoodi nunca pede login, senha, dinheiro nem instalação. Se não
             reconhece, ignore.
           </Texto>
         </>

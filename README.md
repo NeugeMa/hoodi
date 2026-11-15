@@ -63,7 +63,7 @@ Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Ale
 src/
 ├── app/                    # Rotas (cada arquivo é uma tela)
 │   ├── _layout.tsx         # Raiz: fonte, tema, conta (telas protegidas) e estado do trajeto
-│   ├── (conta)/            # Sem conta: Boas-vindas, Criar conta, Confirmar, Entrar, Esqueci a senha
+│   ├── (conta)/            # Sem conta: Entrar (primeira tela), Criar conta, Confirmar, Esqueci a senha
 │   └── (tabs)/             # Barra de navegação
 │       ├── _layout.tsx     # Início, Mapa, Histórico e Perfil
 │       ├── index.tsx       # Início
@@ -108,6 +108,8 @@ Regras que o código já aplica:
 
 Regras visuais combinadas pela equipe (além do v3):
 
+- **"Hoodi" com H maiúsculo** em todos os textos do app (inclui "Hoodi Pet"). Identificadores técnicos continuam minúsculos: `hoodi://`, chaves de armazenamento e o nome que o Pet anuncia no Bluetooth (`hoodi Pet XXXX`, vem do firmware).
+
 - **Ícones Phosphor** em vez de Lucide.
 - **Sombra sutil e borda limpa** nos cards (token `sombra.suave` + borda de 1px em `linha`). **Nada de gradientes.**
 - **Micro-interações com Lottie**, com animações aprovadas antes de entrar.
@@ -127,7 +129,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 
 | Feature | Telas | Responsável | Status |
 |---|---|---|---|
-| F01 · Cadastro e acesso | Boas-vindas, Criar conta, Confirmar, Entrar, Esqueci a senha | Mari | **Pronto, ligado à API** |
+| F01 · Cadastro e acesso | Entrar, Criar conta, Confirmar, Esqueci a senha | Mari | **Pronto, ligado à API** |
 | F02 · Boas-vindas e permissões | Permissões | Colega | A fazer |
 | F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | **Pronto, aguardando a grade da API** |
 | F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
@@ -232,20 +234,22 @@ Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nan
 
 ### Cadastro e acesso (F01)
 
-Ligado à API .NET (`/v1/auth`). Sem conta, o app só mostra as telas de conta; com conta, só o app. Quem faz essa troca é o `Stack.Protected` em [`src/app/_layout.tsx`](src/app/_layout.tsx).
+Ligado à API .NET (`/v1/auth`). **O app abre sempre no Início**, com ou sem conta: Início, Mapa, Histórico, relógio e Hoodi Pet funcionam sem conta. Só Contatos de segurança e Pedir ajuda pedem para entrar; o Perfil, sem conta, mostra **Entrar** e **Criar conta**. Quem faz esses desvios é o `Stack.Protected` em [`src/app/_layout.tsx`](src/app/_layout.tsx). A sessão fica salva: depois de entrar uma vez, o app continua logado ao abrir de novo.
 
 | Tela | Rota | O que faz | QA |
 |---|---|---|---|
-| Boas-vindas | `/boas-vindas` | O que o hoodi faz, numa frase, e que o risco é o melhor dado disponível no período | F02 CA1 |
-| Criar conta | `/criar-conta` | E-mail, "Tenho 18 anos ou mais" e o consentimento, os dois desmarcados. O botão só libera com os dois marcados | CA1, CA5, CA6, TC01, TC04 |
-| Confira seu e-mail | `/verificar-email` | Avisa que o link foi enviado, pede outro e oferece Entrar | CA2 |
-| Confirmar | `/confirmar` | Aberta pelo link `hoodi://confirmar#token=...`: nome de tratamento e senha. Depois entra sozinho | CA1 |
-| Entrar | `/entrar` | E-mail e senha. Erro em texto: "E-mail ou senha incorretos" | CA3, CA4, TC03 |
+| Criar conta | `/criar-conta` | Nome, data de nascimento (calendário), e-mail, senha e o consentimento, que começa desmarcado. Menos de 18 anos não avança | CA1, CA5, CA6, CA7, TC01, TC04 |
+| Enviamos um link | `/verificar-email` | Logo depois de Criar conta: avisa que o link foi enviado para o e-mail, pede outro e oferece Entrar | CA2 |
+| Confirmar | `/confirmar` | Aberta pelo link `hoodi://confirmar#token=...`: cria a conta com o nome e a senha do Criar conta e já entra. Se o app foi fechado no meio, pede a senha de novo | CA1 |
+| Entrar | `/entrar` | Abre por cima do app (Perfil, Pedir ajuda, Contatos). E-mail e senha, "Esqueci a senha" e, embaixo, "Ainda não tem conta? Criar conta". Erro em texto: "E-mail ou senha incorretos". Traz também a frase do que o hoodi faz e que o risco é o melhor dado disponível no período (F02 CA1) | CA3, CA4, TC03 |
 | Esqueci a senha | `/esqueci-senha` e `/redefinir-senha` | Link `hoodi://redefinir-senha#token=...` e senha nova | — |
 | Sair | Perfil | Com confirmação; avisa o servidor e apaga a sessão do aparelho | F08 CA6 |
 
-- **Cadastro em 2 etapas (como a API faz):** primeiro só o e-mail; a senha e o nome entram ao abrir o link do e-mail. A API responde igual exista ou não a conta, para não revelar quem usa o hoodi; por isso o "já existe conta" (CA2) vira o aviso e o botão Entrar da tela "Confira seu e-mail".
-- **Senha:** de 10 a 128 caracteres (regra da API), oculta por padrão, com **Mostrar**. Todos os campos têm rótulo visível e lido pelo leitor de tela (CA7).
+- **Cadastro com confirmação por e-mail (como a API faz):** a pessoa preenche tudo em Criar conta; a API manda um link e só cria a conta quando ele é aberto. Até lá, a senha fica **só na memória do app**, nunca no disco.
+- **Idade:** a data de nascimento serve só para conferir os 18 anos (CA6) e não é guardada nem enviada; o app guarda apenas a data em que a maioridade foi confirmada.
+- **"Já existe conta" (CA2):** a API responde igual exista ou não a conta, para não revelar quem usa o hoodi; por isso o "já existe conta" (CA2) vira o aviso e o botão Entrar da tela "Confira seu e-mail".
+- **hoodi Pet como mascote:** Entrar e Criar conta têm a telinha do Pet no topo, que reage: olha em volta no e-mail, **fecha os olhos enquanto você digita a senha** (abre se tocar no olho para mostrar), fica confuso num erro e mostra os pontinhos enquanto entra.
+- **Senha:** de 10 a 128 caracteres (regra da API), oculta por padrão, com o ícone de olho para mostrar. Todos os campos têm rótulo visível e lido pelo leitor de tela (CA7).
 - **Consentimento:** a data em que a pessoa confirmou os 18 anos e aceitou fica salva no aparelho (`preferencias`). A API ainda não guarda o aceite.
 - **Sessão:** o access token dura 60 min e é renovado sozinho com o refresh token, uma renovação por vez ([`sessao.ts`](src/features/conta/sessao.ts)). Se a renovação for recusada, o app volta para Entrar. Os tokens ficam no **SecureStore**, nunca no SQLite.
 - **Link do e-mail no Expo Go:** o `hoodi://` só abre o app no development build. No Expo Go (ou com o e-mail aberto no computador), copie o link e cole no campo **Link do e-mail**.

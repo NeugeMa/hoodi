@@ -14,6 +14,8 @@ type Props = {
   carinha: Carinha;
   /** Cor da moldura: a cor do nível de risco (cor + carinha + palavra). */
   corMoldura: string;
+  /** Versão pequena (ex.: no topo das telas de conta com o teclado aberto): moldura e respiro menores. */
+  compacta?: boolean;
 };
 
 function useQuadroAtual(carinha: Carinha, parado: boolean) {
@@ -41,7 +43,7 @@ function useQuadroAtual(carinha: Carinha, parado: boolean) {
  * tranquila → sorri e respira · atenta → olha em volta · preocupada → treme ·
  * confusa (Sem dado) → interrogação · procurando → pontinhos carregando.
  */
-export function TelaPet({ carinha, corMoldura }: Props) {
+export function TelaPet({ carinha, corMoldura, compacta = false }: Props) {
   const reduzir = useReduzirMovimento();
   const quadro = useQuadroAtual(carinha, reduzir);
 
@@ -49,8 +51,8 @@ export function TelaPet({ carinha, corMoldura }: Props) {
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={`Carinha do hoodi Pet: ${NOME_CARINHA[carinha]}`}
-      style={[styles.moldura, { borderColor: corMoldura }]}>
+      accessibilityLabel={`Carinha do Hoodi Pet: ${NOME_CARINHA[carinha]}`}
+      style={[styles.moldura, compacta ? styles.molduraCompacta : null, { borderColor: corMoldura }]}>
       <View style={styles.tela}>
         <Svg width="100%" height="100%" viewBox={`0 0 ${LARGURA} ${ALTURA}`}>
           <Defs>
@@ -77,6 +79,7 @@ const styles = StyleSheet.create({
     padding: espaco[3],
     backgroundColor: FUNDO_TELA,
   },
+  molduraCompacta: { borderWidth: 2, borderRadius: raio.sm + 2, padding: espaco[1] + 2 },
   tela: {
     width: '100%',
     aspectRatio: LARGURA / ALTURA,

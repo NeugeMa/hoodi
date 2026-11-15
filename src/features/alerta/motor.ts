@@ -65,7 +65,7 @@ export function montarAlerta(nivel: 'medio' | 'alto', trecho: string): Alerta {
     nivel,
     trecho,
     titulo: 'Risco médio nesta área',
-    texto: `${trecho}. Seu relógio e o hoodi Pet avisam se o risco subir.`,
+    texto: `${trecho}. Seu relógio e o Hoodi Pet avisam se o risco subir.`,
   };
 }
 

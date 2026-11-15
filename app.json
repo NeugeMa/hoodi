@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "hoodi",
+    "name": "Hoodi",
     "slug": "hoodi",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -39,17 +39,18 @@
         {
           "isBackgroundEnabled": false,
           "neverForLocation": true,
-          "bluetoothAlwaysPermission": "O hoodi usa o Bluetooth para conectar ao hoodi Pet e mandar os avisos de risco para ele."
+          "bluetoothAlwaysPermission": "O Hoodi usa o Bluetooth para conectar ao Hoodi Pet e mandar os avisos de risco para ele."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "O hoodi usa sua localização, só no aparelho, para dizer o risco registrado onde você está e avisar quando ele sobe."
+          "locationWhenInUsePermission": "O Hoodi usa sua localização, só no aparelho, para dizer o risco registrado onde você está e avisar quando ele sobe."
         }
       ],
       "expo-notifications",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

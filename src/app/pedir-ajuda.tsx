@@ -34,10 +34,10 @@ function textoDoResumo(r: ResumoDespachos) {
     case 'sem_destinatarios':
       return 'Nenhum contato confirmado para avisar. Convide alguém em Contatos.';
     case 'em_processamento':
-      return `O hoodi está avisando ${r.total === 1 ? 'seu contato' : `seus ${r.total} contatos`}.`;
+      return `O Hoodi está avisando ${r.total === 1 ? 'seu contato' : `seus ${r.total} contatos`}.`;
     case 'aceito_expo':
     case 'aceito_provedor_push':
-      return 'O aviso saiu para os seus contatos. O hoodi não consegue garantir que chegou.';
+      return 'O aviso saiu para os seus contatos. O Hoodi não consegue garantir que chegou.';
     case 'aberto_no_app':
       return r.abertosNoApp === 1 ? '1 contato abriu o seu pedido no app.' : `${r.abertosNoApp} contatos abriram o seu pedido no app.`;
     case 'nenhum_envio_confirmado':
@@ -76,7 +76,7 @@ export default function PedirAjudaScreen() {
       setEstado({
         tipo: 'nao-enviado',
         motivo: 'limite',
-        texto: `Você já enviou ${MAX_PEDIDOS_POR_HORA} pedidos na última hora, o limite do hoodi. Este pedido não foi enviado.${
+        texto: `Você já enviou ${MAX_PEDIDOS_POR_HORA} pedidos na última hora, o limite do Hoodi. Este pedido não foi enviado.${
           situacao.liberaEm ? ` Você pode pedir de novo às ${horaCurta(situacao.liberaEm.toISOString())}.` : ''
         }`,
       });
@@ -179,7 +179,7 @@ export default function PedirAjudaScreen() {
       subtitulo={
         semContatos
           ? 'Você ainda não tem contatos confirmados para avisar.'
-          : `${confirmados === 1 ? 'Seu contato confirmado recebe' : `Seus ${confirmados} contatos confirmados recebem`} um aviso do hoodi.`
+          : `${confirmados === 1 ? 'Seu contato confirmado recebe' : `Seus ${confirmados} contatos confirmados recebem`} um aviso do Hoodi.`
       }
       rodape={
         semContatos ? (
@@ -211,13 +211,13 @@ export default function PedirAjudaScreen() {
         <Texto variante="rotulo" cor="grafiteSuave">
           O que seus contatos veem
         </Texto>
-        <Texto variante="corpoForte">{usuario?.nome ?? 'Você'} pediu ajuda pelo hoodi</Texto>
+        <Texto variante="corpoForte">{usuario?.nome ?? 'Você'} pediu ajuda pelo Hoodi</Texto>
         <Texto variante="legenda" cor="grafite">
           Às {horaCurta(agora)}, perto da sua posição atual (aproximada, cerca de 100 m), com um link para abrir no
           Google Maps.
         </Texto>
         <Texto variante="legenda" cor="grafite">
-          O hoodi nunca pede login, senha, dinheiro nem instalação. Se não reconhece, ignore.
+          O Hoodi nunca pede login, senha, dinheiro nem instalação. Se não reconhece, ignore.
         </Texto>
       </View>
 
@@ -226,7 +226,7 @@ export default function PedirAjudaScreen() {
           icone={Warning}
           tom={limite.restantes === 0 ? 'atencao' : 'neutro'}
           titulo={limite.restantes === 0 ? 'Limite de pedidos atingido' : `Você ainda pode enviar ${limite.restantes} nesta hora`}
-          texto={`O hoodi permite ${MAX_PEDIDOS_POR_HORA} pedidos por hora, para evitar envio por engano.`}
+          texto={`O Hoodi permite ${MAX_PEDIDOS_POR_HORA} pedidos por hora, para evitar envio por engano.`}
         />
       ) : null}
     </TelaConta>

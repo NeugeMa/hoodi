@@ -7,8 +7,10 @@ export const PREF = {
   relogioOrientacaoVista: 'relogio_orientacao_vista',
   /** A pessoa confirmou que configurou as notificações no relógio. */
   relogioConfigurado: 'relogio_configurado',
-  /** E-mail do cadastro em andamento (etapa 1 feita, aguardando o link). Usado para entrar depois. */
+  /** E-mail do cadastro em andamento (aguardando o link do e-mail). Usado para entrar depois. */
   cadastroEmail: 'cadastro_email',
+  /** Nome do cadastro em andamento, para preencher a confirmação se o app for fechado no meio. */
+  cadastroNome: 'cadastro_nome',
   /** Último e-mail que entrou, para preencher o campo de Entrar. */
   ultimoEmail: 'ultimo_email',
   /** Data ISO em que a pessoa confirmou ter 18 anos ou mais (F01 CA1, CA6). */
