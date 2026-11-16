@@ -4,6 +4,7 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  Bell,
   Bluetooth,
   Database,
   Moon,
@@ -26,15 +27,14 @@ import { usePet } from '@/features/pet/pet-context';
 import {
   OPCOES_ANTECEDENCIA,
   OPCOES_HORARIO,
-  OPCOES_VIBRACAO,
   rotuloDe,
 } from '@/features/preferencias/alertas';
-import { usePreferencias } from '@/features/preferencias/preferencias-context';
+import { OPCOES_TEMA, usePreferencias } from '@/features/preferencias/preferencias-context';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
-type Escolha = 'vibracao' | 'antecedencia' | 'horario' | null;
+type Escolha = 'antecedencia' | 'horario' | 'tema' | null;
 
 /**
  * Perfil (F08 CA1, CA2, CA6 · F06 CA2): preferências de alerta com o valor escolhido na linha,
@@ -48,7 +48,7 @@ export default function PerfilScreen() {
   const { meusContatos } = useContatos();
   const { canais } = useTrajeto();
   const { pareado, conectado } = usePet();
-  const { alertas, mudarAlertas, consentimentoEm } = usePreferencias();
+  const { alertas, mudarAlertas, consentimentoEm, tema, mudarTema } = usePreferencias();
   const [escolha, setEscolha] = useState<Escolha>(null);
   const logado = estado === 'logado';
 
@@ -118,9 +118,13 @@ export default function PerfilScreen() {
         <GrupoLista titulo="Alertas">
           <ItemLista
             icone={Vibrate}
-            rotulo="Vibração do Hoodi Pet"
-            valor={rotuloDe(OPCOES_VIBRACAO, alertas.vibracao)}
-            onPress={() => setEscolha('vibracao')}
+            rotulo="Avisar no celular também"
+            detalhe={
+              alertas.avisarNoCelular
+                ? 'O celular vibra junto com o Hoodi Pet em todo alerta'
+                : 'Só o Hoodi Pet vibra (o celular vibra se o Pet estiver desconectado)'
+            }
+            interruptor={{ ligado: alertas.avisarNoCelular, aoMudar: (avisarNoCelular) => mudarAlertas({ avisarNoCelular }) }}
           />
           <ItemLista
             icone={SpeakerHigh}
@@ -140,6 +144,15 @@ export default function PerfilScreen() {
             rotulo="Horário dos alertas"
             valor={rotuloDe(OPCOES_HORARIO, alertas.horario)}
             onPress={() => setEscolha('horario')}
+          />
+        </GrupoLista>
+
+        <GrupoLista titulo="Aparência">
+          <ItemLista
+            icone={Moon}
+            rotulo="Tema"
+            valor={rotuloDe(OPCOES_TEMA, tema)}
+            onPress={() => setEscolha('tema')}
           />
         </GrupoLista>
 
@@ -167,6 +180,12 @@ export default function PerfilScreen() {
             onPress={() => router.push('/contatos')}
           />
           <ItemLista
+            icone={Bell}
+            rotulo="Permissões do celular"
+            detalhe="Localização, notificações e Bluetooth"
+            onPress={() => router.push('/permissoes')}
+          />
+          <ItemLista
             icone={Database}
             rotulo="Dados e privacidade"
             detalhe="O que fica no aparelho, consentimento e conta"
@@ -178,19 +197,19 @@ export default function PerfilScreen() {
       </ScrollView>
 
       <Seletor
-        visivel={escolha === 'vibracao'}
-        titulo="Vibração do Hoodi Pet"
-        opcoes={OPCOES_VIBRACAO}
-        valor={alertas.vibracao}
-        aoEscolher={(vibracao) => mudarAlertas({ vibracao })}
-        aoFechar={() => setEscolha(null)}
-      />
-      <Seletor
         visivel={escolha === 'antecedencia'}
         titulo="Antecedência do aviso"
         opcoes={OPCOES_ANTECEDENCIA}
         valor={alertas.antecedencia}
         aoEscolher={(antecedencia) => mudarAlertas({ antecedencia })}
+        aoFechar={() => setEscolha(null)}
+      />
+      <Seletor
+        visivel={escolha === 'tema'}
+        titulo="Tema"
+        opcoes={OPCOES_TEMA}
+        valor={tema}
+        aoEscolher={(t) => mudarTema(t)}
         aoFechar={() => setEscolha(null)}
       />
       <Seletor

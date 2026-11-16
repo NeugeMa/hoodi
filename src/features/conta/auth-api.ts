@@ -40,10 +40,10 @@ export function sairNoServidor(instalacaoId: string) {
 }
 
 /**
- * Exclui a conta e os vínculos de contato no servidor (F08 CA5 · RF09).
- * ATENÇÃO: a API ainda não tem essa rota. O caminho abaixo é a PROPOSTA para o Abner;
- * enquanto não existir, a API responde 404/405 e o app avisa que nada foi apagado.
+ * Exclui a conta (F08 CA5 · RF09 · contrato v0.6 do Abner). Pede a senha atual no corpo.
+ * Apaga a conta, sessões, convites, vínculos (dos dois lados) e tokens de push numa transação.
+ * Erros: 403 SENHA_INVALIDA (nada apagado), 401 sessão vencida, 429 muitas tentativas.
  */
-export function excluirConta() {
-  return chamarAutenticado<void>('/v1/conta', { metodo: 'DELETE' });
+export function excluirConta(senha: string) {
+  return chamarAutenticado<void>('/v1/conta', { metodo: 'DELETE', corpo: { senha } });
 }

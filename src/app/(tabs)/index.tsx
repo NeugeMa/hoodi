@@ -4,6 +4,7 @@ import { AccessibilityInfo, Alert, Linking, Platform, ScrollView, StyleSheet, Vi
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BotaoPedirAjuda } from '@/components/inicio/botao-pedir-ajuda';
+import { SugestaoTema } from '@/components/inicio/sugestao-tema';
 import { HeroiInicio } from '@/components/inicio/heroi-inicio';
 import { SecaoTrajeto } from '@/components/inicio/secao-trajeto';
 import { MapPin } from '@/components/icones';
@@ -38,13 +39,17 @@ export default function InicioScreen() {
   const petPareado = !!usePet().pareado;
   const { permissao, pedirLocalizacao } = useAcompanhamento();
 
-  // Primeiro acesso: mostra a orientação do relógio uma vez (F06 CA1, CA2).
-  // Quando as Permissões (F02) existirem, elas abrem esta tela logo depois.
+  // Primeiro acesso: Permissões (F02) e, logo depois, a orientação do relógio (F06 CA1 · TC35).
+  // Cada uma aparece uma vez só e pode ser reaberta no Perfil.
   useEffect(() => {
     let ativo = true;
-    lerPreferencia(PREF.relogioOrientacaoVista).then((vista) => {
-      if (ativo && !vista) router.push('/relogio');
-    });
+    Promise.all([lerPreferencia(PREF.permissoesVistas), lerPreferencia(PREF.relogioOrientacaoVista)]).then(
+      ([permissoes, relogio]) => {
+        if (!ativo) return;
+        if (!permissoes) router.push('/permissoes');
+        else if (!relogio) router.push('/relogio');
+      },
+    );
     return () => {
       ativo = false;
     };
@@ -87,6 +92,8 @@ export default function InicioScreen() {
       <View style={[styles.painel, sombra.suave, { backgroundColor: cores.papelElevado, borderColor: cores.linha }]}>
         <View style={[styles.alca, { backgroundColor: cores.linha }]} />
         <ScrollView contentContainerStyle={styles.conteudoPainel} showsVerticalScrollIndicator={false}>
+          {/* Depois das 18h, sugere o tema escuro (F02 CA5). */}
+          <SugestaoTema />
           <OndeEstou nivel={nivel} local={posicao?.local ?? null} explicacao={explicacaoDaPosicao(posicao)} />
           {permissao !== 'concedida' ? (
             <Aviso

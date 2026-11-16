@@ -4,15 +4,18 @@ import type { BleManager as TipoBleManager, Subscription } from 'react-native-bl
 
 import {
   CARAC_COMANDO,
-  CARAC_PAREAMENTO,
-  montarComando,
+  CARAC_EVENTO,
+  CARAC_STATUS,
+  deBase64,
+  lerEvento,
   paraBase64,
   PREFIXO_NOME,
   SERVICO_PET,
+  type EventoPet,
 } from './protocolo';
 
 /**
- * Bluetooth (BLE) com o hoodi Pet, usando react-native-ble-plx.
+ * Bluetooth (BLE) com o hoodi Pet, usando react-native-ble-plx (protocolo v1, ver protocolo.ts).
  * O Expo Go não tem o módulo nativo de BLE: lá o suporte é "expo-go" e nada é chamado.
  * Para testar o Bluetooth de verdade é preciso um development build.
  */
@@ -23,6 +26,9 @@ export type PetEncontrado = { id: string; nome: string; rssi: number | null };
 
 export const SUPORTE: Suporte =
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient ? 'expo-go' : 'ok';
+
+/** Tempo para a pessoa digitar no celular o código que aparece no Pet. */
+const TEMPO_PAREAMENTO_MS = 60_000;
 
 let gerenciador: TipoBleManager | null = null;
 
@@ -91,18 +97,42 @@ export async function conectar(id: string) {
   await dispositivo.discoverAllServicesAndCharacteristics();
 }
 
-/** Grava o token deste celular no Pet (CA9: só este celular comanda o Pet). */
-export async function gravarToken(id: string, token: Uint8Array) {
-  await ble().writeCharacteristicWithResponseForDevice(id, SERVICO_PET, CARAC_PAREAMENTO, paraBase64(token));
+/**
+ * Garante o pareamento (CA9). Ler o status do Pet exige pareamento: na primeira vez,
+ * o sistema abre o pedido de código e a pessoa digita os 6 dígitos da tela do Pet.
+ * Enquanto ela digita, a leitura falha; tenta de novo até TEMPO_PAREAMENTO_MS.
+ * Com o celular já pareado, passa na primeira tentativa.
+ */
+export async function garantirPareamento(id: string) {
+  const inicio = Date.now();
+  for (;;) {
+    try {
+      await ble().readCharacteristicForDevice(id, SERVICO_PET, CARAC_STATUS);
+      return;
+    } catch (e) {
+      if (Date.now() - inicio >= TEMPO_PAREAMENTO_MS) throw e;
+      await new Promise((r) => setTimeout(r, 2_000));
+    }
+  }
 }
 
-export async function enviarComando(id: string, token: Uint8Array, comando: number, argumento = 0) {
-  await ble().writeCharacteristicWithResponseForDevice(
-    id,
-    SERVICO_PET,
-    CARAC_COMANDO,
-    paraBase64(montarComando(token, comando, argumento)),
-  );
+/** Escreve um comando já montado (montarEstado / montarSimples). */
+export async function enviarComando(id: string, frame: Uint8Array) {
+  await ble().writeCharacteristicWithResponseForDevice(id, SERVICO_PET, CARAC_COMANDO, paraBase64(frame));
+}
+
+/** Clique e pressão longa no botão do Pet. O contador evita repetir o mesmo evento. */
+export function observarEventos(id: string, callback: (evento: EventoPet) => void): () => void {
+  if (SUPORTE !== 'ok') return () => {};
+  let ultimo = -1;
+  const sub: Subscription = ble().monitorCharacteristicForDevice(id, SERVICO_PET, CARAC_EVENTO, (erro, c) => {
+    if (erro || !c?.value) return;
+    const evento = lerEvento(deBase64(c.value));
+    if (!evento || evento.contador === ultimo) return;
+    ultimo = evento.contador;
+    callback(evento);
+  });
+  return () => sub.remove();
 }
 
 export async function desconectar(id: string) {

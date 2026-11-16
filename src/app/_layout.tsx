@@ -90,6 +90,7 @@ function Navegacao() {
       <Stack.Screen name="pet/conectado" />
       <Stack.Screen name="relogio" />
       <Stack.Screen name="privacidade" />
+      <Stack.Screen name="permissoes" />
       {/* Só o que depende da conta pede login: contatos e pedido de ajuda (F09) e rotas (F04, a API exige conta). */}
       <Stack.Protected guard={logado} redirectTo="/entrar">
         <Stack.Screen name="comparar-rotas" />

@@ -1,14 +1,10 @@
-import { MOCK_URL } from '@/features/api/cliente';
 import { chamarAutenticado } from '@/features/conta/sessao';
 
 /**
- * Pedido de ajuda (/v1/panico). Ainda no mock da API (Prism); quando a API real sair, só troca a URL.
+ * Pedido de ajuda (/v1/panico), já na API real (v0.6 do Abner).
  * O servidor avisa os contatos por push (só "tipo" e "pedidoId"); quem recebe abre o app para ver
  * nome, hora e posição. "Push enviado" não quer dizer "recebido": o app nunca afirma entrega.
  */
-
-/** Enquanto o pânico só existe no mock, vai para EXPO_PUBLIC_MOCK_URL (veja cliente.ts). */
-const BASE = MOCK_URL;
 
 export type EstadoDespachos =
   | 'sem_destinatarios'
@@ -57,7 +53,6 @@ export type Coordenadas = { latitude: number; longitude: number } | null;
 /** A chave de idempotência evita pedido duplicado quando a rede falha e a pessoa toca de novo. */
 export function enviarPanico(idempotencyKey: string, posicao: Coordenadas) {
   return chamarAutenticado<PanicoRegistrado>('/v1/panico', {
-    base: BASE,
     metodo: 'POST',
     corpo: {
       idempotencyKey,
@@ -70,18 +65,18 @@ export function enviarPanico(idempotencyKey: string, posicao: Coordenadas) {
 }
 
 export function statusDoPanico(pedidoId: string) {
-  return chamarAutenticado<PanicoStatus>(`/v1/panico/${encodeURIComponent(pedidoId)}/status`, { base: BASE });
+  return chamarAutenticado<PanicoStatus>(`/v1/panico/${encodeURIComponent(pedidoId)}/status`);
 }
 
 export function panicosRecebidos() {
-  return chamarAutenticado<PanicoRecebido[]>('/v1/panico/recebidos', { base: BASE });
+  return chamarAutenticado<PanicoRecebido[]>('/v1/panico/recebidos');
 }
 
 export function detalheDoPanico(pedidoId: string) {
-  return chamarAutenticado<PanicoDetalhe>(`/v1/panico/${encodeURIComponent(pedidoId)}`, { base: BASE });
+  return chamarAutenticado<PanicoDetalhe>(`/v1/panico/${encodeURIComponent(pedidoId)}`);
 }
 
 /** O contato abriu o pedido no app (não prova que o push chegou). */
 export function marcarAberto(pedidoId: string) {
-  return chamarAutenticado<void>(`/v1/panico/${encodeURIComponent(pedidoId)}/abertura`, { base: BASE, metodo: 'POST' });
+  return chamarAutenticado<void>(`/v1/panico/${encodeURIComponent(pedidoId)}/abertura`, { metodo: 'POST' });
 }

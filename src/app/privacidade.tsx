@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { AccessibilityInfo, Alert, StyleSheet, View } from 'react-native';
 
+import { ConfirmarSenha } from '@/components/conta/confirmar-senha';
 import { TelaConta } from '@/components/conta/tela-conta';
 import { CheckCircle, CloudSlash, Database, ShieldCheck, Trash, WarningCircle } from '@/components/icones';
 import { Aviso } from '@/components/ui/aviso';
@@ -35,6 +36,8 @@ export default function PrivacidadeScreen() {
   const { consentimentoEm, revogarConsentimento, darConsentimento } = usePreferencias();
   const [excluindo, setExcluindo] = useState(false);
   const [falhaExclusao, setFalhaExclusao] = useState<string | null>(null);
+  const [pedindoSenha, setPedindoSenha] = useState(false);
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
   const logado = estado === 'logado';
 
   function confirmarRevogar() {
@@ -60,30 +63,25 @@ export default function PrivacidadeScreen() {
     AccessibilityInfo.announceForAccessibility('Consentimento dado. Os alertas estão ligados.');
   }
 
-  function confirmarExcluir() {
-    Alert.alert(
-      'Excluir a conta?',
-      'Sua conta e seus contatos de segurança são apagados do servidor. Isso não pode ser desfeito. O histórico neste celular continua até você apagar.',
-      [
-        { text: 'Agora não', style: 'cancel' },
-        { text: 'Excluir conta', style: 'destructive', onPress: excluir },
-      ],
-    );
-  }
-
-  async function excluir() {
+  async function excluir(senha: string) {
+    setErroSenha(null);
     setFalhaExclusao(null);
     setExcluindo(true);
     try {
-      await excluirConta();
+      await excluirConta(senha);
+      setPedindoSenha(false);
       AccessibilityInfo.announceForAccessibility('Conta excluída.');
       router.replace('/');
     } catch (e) {
       setExcluindo(false);
-      // A API ainda não tem a rota de exclusão: dizer a verdade, sem fingir que apagou.
-      if (ehErroHttp(e, 404) || ehErroHttp(e, 405) || ehErroHttp(e, 501)) {
-        setFalhaExclusao('A exclusão da conta ainda não está disponível no servidor do Hoodi. Nada foi apagado.');
+      if (ehErroHttp(e, 403)) {
+        // SENHA_INVALIDA: o servidor conferiu e não apagou nada.
+        setErroSenha('Senha incorreta. Nada foi apagado.');
+      } else if (ehErroHttp(e, 404) || ehErroHttp(e, 405) || ehErroHttp(e, 501)) {
+        setPedindoSenha(false);
+        setFalhaExclusao('A exclusão da conta ainda não está disponível neste servidor do Hoodi. Nada foi apagado.');
       } else {
+        setPedindoSenha(false);
         setFalhaExclusao(`${mensagemDeFalha(e)} Nada foi apagado.`);
       }
     }
@@ -143,11 +141,26 @@ export default function PrivacidadeScreen() {
             rotulo={excluindo ? 'Excluindo' : 'Excluir conta'}
             variante="secundario"
             icone={Trash}
-            onPress={confirmarExcluir}
+            onPress={() => {
+              setErroSenha(null);
+              setPedindoSenha(true);
+            }}
             desabilitado={excluindo}
           />
         </View>
       ) : null}
+
+      {/* Excluir a conta pede a senha (contrato v0.6): a confirmação já é a própria senha. */}
+      <ConfirmarSenha
+        visivel={pedindoSenha}
+        titulo="Excluir a conta?"
+        texto="Sua conta, seus contatos de segurança e seus convites são apagados do servidor. Isso não pode ser desfeito. O histórico neste celular continua até você apagar. Para confirmar, escreva sua senha."
+        rotuloConfirmar="Excluir conta"
+        erro={erroSenha}
+        enviando={excluindo}
+        aoConfirmar={excluir}
+        aoFechar={() => setPedindoSenha(false)}
+      />
     </TelaConta>
   );
 }

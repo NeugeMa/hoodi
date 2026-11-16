@@ -21,8 +21,8 @@ type ContaValor = {
   entrar: (email: string, senha: string) => Promise<void>;
   /** Sai mesmo sem internet: o servidor é avisado quando dá, e o aparelho esquece a sessão sempre. */
   sair: () => Promise<void>;
-  /** Exclui a conta no servidor e esquece a sessão. Lança ErroApi se o servidor não excluir. */
-  excluirConta: () => Promise<void>;
+  /** Exclui a conta no servidor (confirma a senha) e esquece a sessão. Lança ErroApi se não excluir. */
+  excluirConta: (senha: string) => Promise<void>;
 };
 
 const ContaContext = createContext<ContaValor | null>(null);
@@ -67,8 +67,8 @@ export function ContaProvider({ children }: { children: ReactNode }) {
     await definirSessao(null);
   }
 
-  async function excluirConta() {
-    await excluirContaNaApi();
+  async function excluirConta(senha: string) {
+    await excluirContaNaApi(senha);
     await salvarPreferencia(PREF.ultimoEmail, '');
     await definirSessao(null);
   }
