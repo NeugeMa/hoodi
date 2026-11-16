@@ -258,9 +258,13 @@ Ligado à API .NET (`/v1/auth`). **O app abre sempre no Início**, com ou sem co
 
 #### Rodar com a API local
 
-1. No PC: `dotnet run --project Hoodi.Api --urls http://0.0.0.0:5000` (repositório da API). Documentação em `http://IP-DO-PC:5000/scalar`.
+1. No PC (repositório da API, .NET 10):
+   ```bash
+   dotnet run --project Hoodi.Api -- --urls http://0.0.0.0:5000 --environment Development --Https:RedirectEnabled=false
+   ```
+   **O `--Https:RedirectEnabled=false` é obrigatório para o celular:** sem ele, a API responde 307 e manda tudo para `https://…:443`, e o app mostra "Não foi possível falar com o Hoodi". O `--environment Development` deixa a API subir sem as chaves de produção. Documentação em `http://IP-DO-PC:5000/scalar`.
 2. Na raiz deste app, crie o `.env` com `EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000` (o IP da máquina na rede, não `localhost`) e reinicie o `npm start`.
-3. O e-mail do cadastro cai no **Mailpit**: `http://localhost:8025` no PC.
+3. O e-mail do cadastro cai no **Mailpit** (SMTP em `127.0.0.1:1025`): `http://localhost:8025` no PC.
 4. Partes da API que ainda não existem (grade, rotas, dispositivos) continuam no mock: `npx @stoplight/prism-cli mock contracts/openapi.yaml`.
 
 ### Contatos de segurança e Pedir ajuda (F09)
