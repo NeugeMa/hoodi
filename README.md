@@ -119,7 +119,54 @@ npx expo start --web --port 8081
 
 Abra **http://localhost:8081/?demo=1** e entre com `demo@hoodi.dev` / `Teste@2026` (botão **Preencher**). Em Comparar rotas, **Iniciar trajeto** faz a posição andar sozinha pela rota. Detalhes em [docs/integracoes.md](docs/integracoes.md#modo-demonstração-no-navegador-vídeo-e-prints).
 
-### 4. Development build (Bluetooth e push)
+Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por convite (não há SMS). Quem aceita o convite passa a receber os pedidos de ajuda de quem convidou.
+
+| Tela | Rota | O que faz | QA |
+|---|---|---|---|
+| Contatos de segurança | `/contatos` (Perfil) | Quem recebe seus pedidos (**Confirmado** ou **Aguardando confirmação**), até 5; **Convidar contato**; de quem você é contato, com **Sair**; pedidos recebidos; campo para colar um convite | CA1, CA2, CA3, CA6, CA9 |
+| Convite | `/convite` | Aberta pelo link `hoodi://convite#codigo=...`: explica o que muda e oferece **Aceitar** ou **Recusar** | CA1, CA2 |
+| Pedir ajuda | `/pedir-ajuda` (Início) | Confirmação com a prévia do que os contatos veem; único botão vermelho | CA4, CA5, CA7, CA8 |
+| Pedido recebido | `/ajuda/[id]` | Para o contato: nome, hora, endereço aproximado em texto e **Abrir no Google Maps** | CA4 |
+
+- **Convite:** o app cria o código na API e abre o menu de compartilhar com o link. O código só aparece uma vez (regra da API); se a pessoa sair da tela, cria outro. Convites pendentes podem ser cancelados. A API só mostra o nome de quem convidou depois do aceite.
+- **Limites (o app aplica, a API ainda não):** 5 contatos contando os convites pendentes (CA3) e 3 pedidos de ajuda por hora (CA7). No quarto pedido, o app explica e diz que **não foi enviado**.
+- **Sem internet (CA8):** o app diz na hora que o pedido não foi enviado, nunca mostra "enviado".
+- **Pedido de ajuda:** vai com a posição **arredondada para cerca de 100 m** (endereço aproximado) e uma chave de idempotência reaproveitada por 120 s, para um toque repetido não virar dois pedidos. A tela mostra a situação sem prometer entrega ("o aviso saiu", nunca "recebido").
+- **Mensagem (CA5):** convite e pedido não pedem login, senha, dinheiro nem instalação e terminam com "Se não reconhece, ignore".
+- **Push:** depois de entrar, o app registra o token Expo do aparelho na API (`PUT /v1/push/tokens`), e tocar no aviso abre o pedido. Precisa de development build com projeto EAS (`extra.eas.projectId`); sem isso, o contato vê o pedido em **Contatos > Pedidos de ajuda recebidos**.
+- **Estado da API:** contatos, convites, push e o **pânico** (`/v1/panico`, v0.6) já estão na API do Abner. O envio do push vem desligado por padrão na API (`Panico__EnvioExpoHabilitado=false`): para a demo, ligue na VM; desligado, o pedido fica registrado e o contato vê em "Pedidos recebidos". Só o **Comparar rotas** continua no mock: rode o Prism na porta 4010 (`npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0`) e ponha no `.env` também `EXPO_PUBLIC_MOCK_URL=http://IP-DO-PC:4010`.
+
+### Comparar rotas (F04)
+
+Aberta pelo **Comparar rotas** do Início (precisa de conta, porque a API de rotas exige login).
+
+- **Origem:** sempre a sua posição atual (TC13). Sem permissão de localização, a tela pede antes.
+- **Destino:** endereço ou nome do lugar, convertido em coordenada pelo **próprio celular** (`expo-location`); nada disso vai para o servidor do Hoodi além da consulta de rotas. Vazio ou não encontrado: o app explica e não compara (CA4).
+- **Resultado** (`POST /v1/rotas/avaliar`, ainda no mock): cartões **Menor risco registrado** e **Rota normal** (a mais rápida), com a diferença em minutos e uma frase como "Esta rota evita 3 células de risco alto" (contada na grade salva no aparelho) ou, sem grade, a diferença percentual de risco registrado (CA1). Se a mais rápida já é a de menor risco, aparece um cartão só.
+- **Trecho sem dado (CA2 · TC14), regra dos 70% (decisão da equipe em 16/11, igual ao contrato da API):** o app compara quando **todas** as rotas têm pelo menos 70% do caminho com dado, e cada cartão mostra quanto falta, por exemplo **"10% do caminho sem dado. Sem dado não quer dizer área tranquila."** Se alguma rota tem mais de 30% sem dado (pela API ou pela grade do aparelho, vale a maior), o app diz "Não dá para comparar" e mostra as rotas só como "Rota 1, Rota 2", sem indicar a de menor risco. A regra fica em [`comparar.ts`](src/features/rotas/comparar.ts) (`COBERTURA_MINIMA`).
+- **Fora da área (CA4)** e **sem internet (CA5 · TC34):** avisos próprios; sem internet, o botão **Ver o mapa** leva ao Mapa com os dados salvos.
+- **Iniciar trajeto (CA6):** começa o acompanhamento com o caminho da rota escolhida (o Mapa desenha) e volta ao Início. Sem consentimento, pede antes (F08 CA4 · TC38).
+- **Linguagem (CA3):** só "menor risco registrado" e "melhor dado disponível no período".
+
+> Com o mock do Prism, a resposta de exemplo tem uma rota com 10% sem dado: o app compara e o cartão dessa rota mostra "10% do caminho sem dado". **No Azure, o F04 CA2 e o TC14 precisam ser atualizados para a regra dos 70%.**
+
+### Permissões e tema escuro (F02)
+
+- **Permissões** (`/permissoes`): aparece no primeiro acesso, antes da orientação do relógio, e pode ser reaberta em **Perfil > Permissões do celular**. Cada permissão (Localização, Notificações, Bluetooth) tem um cartão com o **motivo**, a situação com ícone e palavra (Permitida, Não permitida, Ainda não pedida, Indisponível aqui) e o botão **Permitir**. O pedido do sistema só aparece depois que a pessoa lê o motivo e toca (CA2).
+- **Se negar** (CA3, CA4): o app continua funcionando e o cartão diz o que parou: sem localização, a comparação de rotas e o alerta não funcionam, mas o mapa continua; sem notificações, **o relógio** deixa de receber; sem Bluetooth, **o Hoodi Pet** deixa de receber. O botão vira **Abrir configurações** (o sistema não pergunta de novo).
+- **No Expo Go**, o Bluetooth aparece como "Indisponível aqui" (só funciona no development build). No navegador, notificações e Bluetooth também.
+- **Tema escuro à noite** (CA5): depois das 18h, se o app estiver claro, o Início mostra "Já é noite" com **Usar tema escuro** (troca na hora) e um X que dispensa até o dia seguinte. A escolha fica em **Perfil > Aparência > Tema**.
+
+### Perfil e Dados e privacidade (F08)
+
+O **Perfil** funciona com ou sem conta; sem conta, mostra o convite para **Entrar** ou **Criar conta**.
+
+| Grupo | Linhas | QA |
+|---|---|---|
+| Alertas | **Avisar no celular também** (o celular vibra junto com o Pet em todo alerta, para quem leva o Pet na mochila), **Som no celular** (liga e desliga), **Antecedência do aviso** (100, 300 ou 600 m) e **Horário dos alertas** (sempre ou só à noite, 18h–6h). O valor escolhido aparece na linha | CA1 |
+| Canais de aviso | **Relógio** (reabre a orientação, F06 CA2) e **Hoodi Pet** (conectado, desconectado ou não pareado) | F05 CA2, F06 |
+| Segurança e dados | **Contatos de segurança** e **Dados e privacidade** | F09, CA3 |
+| Conta | **Sair**, com confirmação | CA6 |
 
 O Expo Go não tem Bluetooth nem push no Android. Para o Hoodi Pet: `eas init`, chave do Firebase e build do APK, em [docs/integracoes.md](docs/integracoes.md#development-build-bluetooth-e-push).
 
