@@ -11,7 +11,7 @@
 
 O Hoodi avisa quem anda a pé à noite quando entra numa área de risco maior, **pelo relógio e pelo Hoodi Pet** (um bichinho de bolso que vibra e mostra uma carinha), para o celular continuar guardado. Este repositório é **o app mobile** da CitizenTech.
 
-**Sumário:** [Integrantes](#integrantes) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Vídeo](#vídeo) · [Prints](#prints) · [Funcionalidades](#funcionalidades) · [Como rodar](#como-rodar) · [Tecnologias](#tecnologias) · [Documentação](#documentação) · [Pendências](#pendências)
+**Sumário:** [Integrantes](#integrantes) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Vídeo](#vídeo) · [Prints](#prints) · [Funcionalidades](#funcionalidades) · [Como rodar](#como-rodar) · [Tecnologias](#tecnologias) · [Documentação](#documentação)
 
 ## Integrantes
 
@@ -198,10 +198,3 @@ O Expo Go não tem Bluetooth nem push no Android. Para o Hoodi Pet: `eas init`, 
 | [Design e acessibilidade](docs/design-e-acessibilidade.md) | Como o app segue o design system v3, ícone e splash, acessibilidade |
 | [Para desenvolver](docs/desenvolvimento.md) | Estrutura de pastas, banco local e como contribuir |
 | [prompts.md](prompts.md) | Registro do uso de IA (regra da GS) |
-
-## Pendências
-
-- **Grade de risco real:** a API ainda não publica a grade v0.6 (células H3, níveis 0 a 3). Até lá, o Mapa mostra "Dados de risco indisponíveis" (no modo demonstração, a grade simulada). Falta decidir o nome do nível 3.
-- **Trajeto com a tela bloqueada (F05 CA3):** o acompanhamento roda com o app aberto; o segundo plano precisa de `expo-task-manager` e do development build.
-- **Pressão longa no botão do Pet:** chega ao app, mas ainda não faz nada (pode virar o Pedir ajuda, se a equipe confirmar).
-- **Design system:** a telinha do Pet no Início e os cards com borda e sombra sutil ainda precisam ser levados ao design system v3.
