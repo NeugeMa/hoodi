@@ -11,7 +11,7 @@
 
 O Hoodi avisa quem anda a pé à noite quando entra numa área de risco maior, **pelo relógio e pelo Hoodi Pet** (um bichinho de bolso que vibra e mostra uma carinha), para o celular continuar guardado. Este repositório é **o app mobile** da CitizenTech.
 
-**Sumário:** [Integrantes](#integrantes) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Vídeo](#vídeo) · [Prints](#prints) · [Funcionalidades](#funcionalidades) · [Como rodar](#como-rodar) · [Tecnologias](#tecnologias) · [Documentação](#documentação) · [Pendências](#pendências)
+**Sumário:** [Integrantes](#integrantes) · [Documentação](#documentação) · [Tecnologias](#tecnologias) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Vídeo](#vídeo) · [Para avaliar](#para-avaliar) · [Prints](#prints) · [Como rodar](#como-rodar)
 
 ## Integrantes
 
@@ -21,6 +21,27 @@ O Hoodi avisa quem anda a pé à noite quando entra numa área de risco maior, *
 | Beatriz Vieira de Novais | RM554746 |
 | Fernando Luiz Silva Antonio | RM555201 |
 | Mariana Neugebauer Dourado | RM550494 |
+
+## Documentação
+
+| Documento | O que tem |
+|---|---|
+| [Funcionalidades](docs/funcionalidades.md) | Cada tela e feature (F01 a F10), com os critérios de aceite que atende |
+| [Integrações](docs/integracoes.md) | API local, modo demonstração, grade de risco, protocolo Bluetooth do Pet e development build |
+| [Design e acessibilidade](docs/design-e-acessibilidade.md) | Como o app segue o design system v3, ícone e splash, acessibilidade |
+| [Para desenvolver](docs/desenvolvimento.md) | Estrutura de pastas, banco local e como contribuir |
+| [prompts.md](prompts.md) | Registro do uso de IA (regra da GS) |
+
+## Tecnologias
+
+| Para quê | Biblioteca |
+|---|---|
+| Base | Expo SDK 58 · React Native 0.88 · TypeScript (modo estrito) · Expo Router |
+| Dados no aparelho | `expo-sqlite` (grade de risco, histórico, preferências) · `expo-secure-store` (sessão) |
+| API | `fetch` com renovação automática do login ([`sessao.ts`](src/features/conta/sessao.ts)) |
+| Mapa e posição | `react-native-maps` · `expo-location` |
+| Avisos | `expo-notifications` (espelhada no relógio) · `react-native-ble-plx` (Hoodi Pet, protocolo v1) |
+| Interface | Plus Jakarta Sans · Phosphor Icons · `react-native-svg` · Lottie · `@react-native-community/datetimepicker` |
 
 ## Ficha da CitizenTech
 
@@ -49,6 +70,40 @@ O Hoodi avisa quem anda a pé à noite quando entra numa área de risco maior, *
 
 **App rodando (até 3 min):** _link a adicionar_
 
+## Para avaliar
+
+Dá para usar o app inteiro **sem subir a API**, no **modo demonstração**: ele já vem com uma conta de teste e dados simulados.
+
+| | |
+|---|---|
+| **E-mail** | `demo@hoodi.dev` |
+| **Senha** | `Teste@2026` |
+
+Na tela **Entrar**, o botão **Preencher** coloca os dois.
+
+**No navegador (o jeito mais rápido):**
+
+```bash
+npm install
+npx expo start --web --port 8081
+```
+
+Abra **http://localhost:8081/?demo=1**. O modo fica ligado nesse navegador até você abrir `?demo=0`.
+
+**No celular, com o Expo Go:** crie o arquivo `.env` na raiz com `EXPO_PUBLIC_DEMO=1`, rode `npm start` e leia o QR code.
+
+**Roteiro sugerido (cerca de 2 minutos):**
+
+1. Abra o app: a abertura mostra a logo e o nome Hoodi, e o Início aparece com o Pet **dormindo** (ainda sem conta).
+2. Em **Perfil > Entrar**, toque em **Preencher** e depois em **Entrar**.
+3. No Início, toque em **Comparar rotas**, escreva um destino (por exemplo, "Estação Liberdade do Metrô") e toque em **Comparar rotas**.
+4. Toque em **Iniciar trajeto**: a posição anda sozinha pela rota, chega o aviso antecipado e depois o alerta de risco.
+5. Veja o **Mapa** com o trajeto e o **Histórico** com os alertas recebidos.
+6. Em **Perfil > Contatos de segurança**, veja os contatos de exemplo. No Início, teste o **Pedir ajuda**.
+7. Em **Perfil > Dados e privacidade**, veja o que fica guardado no aparelho.
+
+**O que é simulado:** a API (contas, contatos, pedido de ajuda e rotas), a grade de risco em volta da FIAP Paulista e a caminhada. Nada sai do aparelho, e as contas, os contatos e os pedidos simulados voltam ao início quando o app é recarregado. O selo **"Demonstração · dados simulados"** fica sempre no topo da tela, para nada se passar por dado real. Bluetooth (Hoodi Pet) e push precisam do development build e da API: veja [Como rodar](#como-rodar).
+
 ## Prints
 
 No navegador, no [modo demonstração](#3-modo-demonstração-no-navegador) (dados simulados), em tamanho de celular.
@@ -63,24 +118,6 @@ No navegador, no [modo demonstração](#3-modo-demonstração-no-navegador) (dad
 | **Abertura** | **Permissões** | **Relógio** | **Dados e privacidade** |
 | <img src="docs/prints/intro.png" width="180" alt="Abertura animada com a logo e o nome Hoodi" /> | <img src="docs/prints/permissoes.png" width="180" alt="Permissões" /> | <img src="docs/prints/relogio.png" width="180" alt="Configurar o relógio" /> | <img src="docs/prints/privacidade.png" width="180" alt="Dados e privacidade" /> |
 
-## Funcionalidades
-
-Seguem as features do QA no Azure Boards (v2). Detalhes de cada uma em [docs/funcionalidades.md](docs/funcionalidades.md).
-
-| Feature | O que a pessoa faz | Situação |
-|---|---|---|
-| **F01** Cadastro e acesso | Cria a conta (nome, nascimento, e-mail, senha, consentimento), confirma pelo link do e-mail, entra, recupera a senha | ✅ Ligado à API |
-| **F02** Boas-vindas e permissões | Vê o motivo de cada permissão antes do pedido do sistema; recebe a sugestão do tema escuro à noite | ✅ |
-| **F03** Mapa reduzido offline | Vê o risco onde está, das células em volta e do trajeto, mesmo sem internet | ✅ Aguardando a grade real da API |
-| **F04** Comparar rotas | Compara a rota normal com a de menor risco registrado, com a diferença em minutos | ✅ Rotas no mock da API |
-| **F05** Trajeto em andamento | Confere num relance o nível atual, o tempo até o destino e o próximo trecho de risco | ✅ Com o app aberto |
-| **F06** Relógio e Hoodi Pet | Configura o relógio e pareia o Pet com o código do visor | ✅ Precisa de development build |
-| **F07** Alerta de risco | Recebe o aviso na tela, no relógio e no Pet quando o risco sobe | ✅ |
-| **F08** Perfil e privacidade | Ajusta os alertas, vê o que fica no aparelho, revoga o consentimento, exclui a conta | ✅ Ligado à API |
-| **F09** Contatos e pedido de ajuda | Convida contatos de confiança e pede ajuda com a posição aproximada | ✅ Ligado à API |
-| **F10** Histórico de alertas | Consulta os alertas recebidos, guardados só no aparelho | ✅ |
-
-**Regras que valem no app todo:** cor nunca sozinha (todo nível tem cor, ícone e nome) · "Sem dado" nunca é tratado como área tranquila · nada de "rota segura" ou "tempo real" · posição, trajeto e histórico não saem do celular, exceto no Pedir ajuda · ações que apagam ou desligam algo pedem confirmação.
 
 ## Como rodar
 
@@ -117,7 +154,7 @@ Para o vídeo e os prints, sem API, GPS ou Bluetooth, com **dados simulados** e 
 npx expo start --web --port 8081
 ```
 
-Abra **http://localhost:8081/?demo=1** e entre com `demo@hoodi.dev` / `Teste@2026` (botão **Preencher**). Em Comparar rotas, **Iniciar trajeto** faz a posição andar sozinha pela rota. Detalhes em [docs/integracoes.md](docs/integracoes.md#modo-demonstração-no-navegador-vídeo-e-prints).
+Abra **http://localhost:8081/?demo=1** e entre com a conta de teste. Roteiro e conta em [Para avaliar](#para-avaliar); detalhes técnicos em [docs/integracoes.md](docs/integracoes.md#modo-demonstração-no-navegador-vídeo-e-prints).
 
 Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por convite (não há SMS). Quem aceita o convite passa a receber os pedidos de ajuda de quem convidou.
 
@@ -177,31 +214,3 @@ O Expo Go não tem Bluetooth nem push no Android. Para o Hoodi Pet: `eas init`, 
 | `npm run typecheck` | Confere os tipos do TypeScript |
 | `npm run lint` | Roda o ESLint |
 | `npm run test:pet` | 19 testes das regras sem tela: protocolo do Pet, alerta, aviso antecipado e comparação de rotas |
-
-## Tecnologias
-
-| Para quê | Biblioteca |
-|---|---|
-| Base | Expo SDK 58 · React Native 0.88 · TypeScript (modo estrito) · Expo Router |
-| Dados no aparelho | `expo-sqlite` (grade de risco, histórico, preferências) · `expo-secure-store` (sessão) |
-| API | `fetch` com renovação automática do login ([`sessao.ts`](src/features/conta/sessao.ts)) |
-| Mapa e posição | `react-native-maps` · `expo-location` |
-| Avisos | `expo-notifications` (espelhada no relógio) · `react-native-ble-plx` (Hoodi Pet, protocolo v1) |
-| Interface | Plus Jakarta Sans · Phosphor Icons · `react-native-svg` · Lottie · `@react-native-community/datetimepicker` |
-
-## Documentação
-
-| Documento | O que tem |
-|---|---|
-| [Funcionalidades](docs/funcionalidades.md) | Cada tela e feature (F01 a F10), com os critérios de aceite que atende |
-| [Integrações](docs/integracoes.md) | API local, modo demonstração, grade de risco, protocolo Bluetooth do Pet e development build |
-| [Design e acessibilidade](docs/design-e-acessibilidade.md) | Como o app segue o design system v3, ícone e splash, acessibilidade |
-| [Para desenvolver](docs/desenvolvimento.md) | Estrutura de pastas, banco local e como contribuir |
-| [prompts.md](prompts.md) | Registro do uso de IA (regra da GS) |
-
-## Pendências
-
-- **Grade de risco real:** a API ainda não publica a grade v0.6 (células H3, níveis 0 a 3). Até lá, o Mapa mostra "Dados de risco indisponíveis" (no modo demonstração, a grade simulada). Falta decidir o nome do nível 3.
-- **Trajeto com a tela bloqueada (F05 CA3):** o acompanhamento roda com o app aberto; o segundo plano precisa de `expo-task-manager` e do development build.
-- **Pressão longa no botão do Pet:** chega ao app, mas ainda não faz nada (pode virar o Pedir ajuda, se a equipe confirmar).
-- **Design system:** a telinha do Pet no Início e os cards com borda e sombra sutil ainda precisam ser levados ao design system v3.
