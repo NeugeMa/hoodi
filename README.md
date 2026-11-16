@@ -6,10 +6,8 @@
 
 <p align="center">
   <strong>Alerta de risco sem tirar o celular do bolso.</strong><br />
-  Global Solution 2026.2 · FIAP · Engenharia de Software (3º ano) · Mobile Development &amp; IoT
 </p>
 
-O Hoodi avisa quem anda a pé à noite quando entra numa área de risco maior, **pelo relógio e pelo Hoodi Pet** (um bichinho de bolso que vibra e mostra uma carinha), para o celular continuar guardado. Este repositório é **o app mobile** da CitizenTech.
 
 **Sumário:** [Integrantes](#integrantes) · [Documentação](#documentação) · [Tecnologias](#tecnologias) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Vídeo](#vídeo) · [Para avaliar](#para-avaliar) · [Prints](#prints) · [Como rodar](#como-rodar)
 
