@@ -38,3 +38,12 @@ export function redefinirSenha(token: string, novaSenha: string) {
 export function sairNoServidor(instalacaoId: string) {
   return chamarAutenticado<void>('/v1/auth/sair', { metodo: 'POST', corpo: { instalacaoId } });
 }
+
+/**
+ * Exclui a conta (F08 CA5 · RF09 · contrato v0.6 do Abner). Pede a senha atual no corpo.
+ * Apaga a conta, sessões, convites, vínculos (dos dois lados) e tokens de push numa transação.
+ * Erros: 403 SENHA_INVALIDA (nada apagado), 401 sessão vencida, 429 muitas tentativas.
+ */
+export function excluirConta(senha: string) {
+  return chamarAutenticado<void>('/v1/conta', { metodo: 'DELETE', corpo: { senha } });
+}

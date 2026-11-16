@@ -40,6 +40,7 @@ Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Ale
 | `npm run typecheck` | Confere os tipos do TypeScript |
 | `npm run lint` | Roda o ESLint |
 | `npx expo-doctor` | Confere versões e configuração do Expo |
+| `npm run test:pet` | Testes das regras sem tela: protocolo do Pet, motor do alerta, aviso antecipado, horário e comparação de rotas (Node 22+) |
 
 ## Stack
 
@@ -82,6 +83,7 @@ src/
 │   ├── api/                # Cliente HTTP da API (endereço, erros problem+json)
 │   ├── conta/              # Sessão, login, cadastro em 2 etapas e renovação do token
 │   ├── contatos/           # Contatos de segurança por convite (F09)
+│   ├── rotas/              # Comparar rotas: API, geometria e regras da comparação (F04)
 │   ├── ajuda/              # Pedido de ajuda: API do pânico, limite por hora, posição aproximada e push
 │   ├── grade/              # Grade de risco: download, checksum, banco local e geometria
 │   ├── historico/          # Histórico local de alertas (banco e agrupamento)
@@ -130,14 +132,14 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 | Feature | Telas | Responsável | Status |
 |---|---|---|---|
 | F01 · Cadastro e acesso | Entrar, Criar conta, Confirmar, Esqueci a senha | Mari | **Pronto, ligado à API** |
-| F02 · Boas-vindas e permissões | Permissões | Colega | A fazer |
+| F02 · Boas-vindas e permissões | Permissões, sugestão do tema escuro | Mari | **Pronto** |
 | F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | **Pronto, aguardando a grade da API** |
-| F04 · Comparar rotas | Comparar rotas | Colega | A fazer |
+| F04 · Comparar rotas | Comparar rotas | Mari | **Pronto** (rotas no mock da API) |
 | F05 · Trajeto em andamento | **Início** | Mari | **Layout pronto, aguardando dados** |
 | F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | **Pronto** (Parear precisa de development build) |
-| F07 · Alerta de risco | Alerta na tela, notificação, vibração do Pet | Mari | **Pronto** (com o app aberto; segundo plano a fazer) |
-| F08 · Perfil e privacidade | Perfil, Dados e privacidade | Colega | A fazer |
-| F09 · Contatos e pedido de ajuda | Contatos de segurança, Convite, Pedir ajuda, Pedido recebido | Mari | **Pronto** (contatos na API; pedido de ajuda no mock) |
+| F07 · Alerta de risco | Alerta na tela, notificação, vibração do Pet (protocolo v1), reforço | Mari e Abner | **Pronto** (com o app aberto; segundo plano a fazer) |
+| F08 · Perfil e privacidade | Perfil, Dados e privacidade | Mari | **Pronto** (excluir conta espera a API) |
+| F09 · Contatos e pedido de ajuda | Contatos de segurança, Convite, Pedir ajuda, Pedido recebido | Mari | **Pronto, ligado à API** (o envio de push precisa estar ligado na VM) |
 | F10 · Histórico de alertas | Histórico | Mari | **Pronto** |
 
 ### Início (F05)
@@ -256,10 +258,14 @@ Ligado à API .NET (`/v1/auth`). **O app abre sempre no Início**, com ou sem co
 
 #### Rodar com a API local
 
-1. No PC: `dotnet run --project Hoodi.Api --urls http://0.0.0.0:5000` (repositório da API). Documentação em `http://IP-DO-PC:5000/scalar`.
+1. No PC (repositório da API, .NET 10):
+   ```bash
+   dotnet run --project Hoodi.Api -- --urls http://0.0.0.0:5000 --environment Development --Https:RedirectEnabled=false
+   ```
+   **O `--Https:RedirectEnabled=false` é obrigatório para o celular:** sem ele, a API responde 307 e manda tudo para `https://…:443`, e o app mostra "Não foi possível falar com o Hoodi". O `--environment Development` deixa a API subir sem as chaves de produção. Documentação em `http://IP-DO-PC:5000/scalar`.
 2. Na raiz deste app, crie o `.env` com `EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000` (o IP da máquina na rede, não `localhost`) e reinicie o `npm start`.
-3. O e-mail do cadastro cai no **Mailpit**: `http://localhost:8025` no PC.
-4. Partes da API que ainda não existem (grade, pânico, rotas, dispositivos) continuam no mock: `npx @stoplight/prism-cli mock contracts/openapi.yaml`.
+3. O e-mail do cadastro cai no **Mailpit** (SMTP em `127.0.0.1:1025`): `http://localhost:8025` no PC.
+4. Partes da API que ainda não existem (grade, rotas, dispositivos) continuam no mock: `npx @stoplight/prism-cli mock contracts/openapi.yaml`.
 
 ### Contatos de segurança e Pedir ajuda (F09)
 
@@ -278,11 +284,53 @@ Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por 
 - **Pedido de ajuda:** vai com a posição **arredondada para cerca de 100 m** (endereço aproximado) e uma chave de idempotência reaproveitada por 120 s, para um toque repetido não virar dois pedidos. A tela mostra a situação sem prometer entrega ("o aviso saiu", nunca "recebido").
 - **Mensagem (CA5):** convite e pedido não pedem login, senha, dinheiro nem instalação e terminam com "Se não reconhece, ignore".
 - **Push:** depois de entrar, o app registra o token Expo do aparelho na API (`PUT /v1/push/tokens`), e tocar no aviso abre o pedido. Precisa de development build com projeto EAS (`extra.eas.projectId`); sem isso, o contato vê o pedido em **Contatos > Pedidos de ajuda recebidos**.
-- **Estado da API:** contatos, convites e push já estão na API do Abner; o pânico (`/v1/panico`) ainda está no mock do Prism. Para testar os dois juntos, rode o Prism na porta 4010 (`npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0`) e ponha no `.env` também `EXPO_PUBLIC_PANICO_URL=http://IP-DO-PC:4010`. Sem essa variável, o pânico usa o `EXPO_PUBLIC_API_URL`.
+- **Estado da API:** contatos, convites, push e o **pânico** (`/v1/panico`, v0.6) já estão na API do Abner. O envio do push vem desligado por padrão na API (`Panico__EnvioExpoHabilitado=false`): para a demo, ligue na VM; desligado, o pedido fica registrado e o contato vê em "Pedidos recebidos". Só o **Comparar rotas** continua no mock: rode o Prism na porta 4010 (`npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0`) e ponha no `.env` também `EXPO_PUBLIC_MOCK_URL=http://IP-DO-PC:4010`.
+
+### Comparar rotas (F04)
+
+Aberta pelo **Comparar rotas** do Início (precisa de conta, porque a API de rotas exige login).
+
+- **Origem:** sempre a sua posição atual (TC13). Sem permissão de localização, a tela pede antes.
+- **Destino:** endereço ou nome do lugar, convertido em coordenada pelo **próprio celular** (`expo-location`); nada disso vai para o servidor do Hoodi além da consulta de rotas. Vazio ou não encontrado: o app explica e não compara (CA4).
+- **Resultado** (`POST /v1/rotas/avaliar`, ainda no mock): cartões **Menor risco registrado** e **Rota normal** (a mais rápida), com a diferença em minutos e uma frase como "Esta rota evita 3 células de risco alto" (contada na grade salva no aparelho) ou, sem grade, a diferença percentual de risco registrado (CA1). Se a mais rápida já é a de menor risco, aparece um cartão só.
+- **Trecho sem dado (CA2 · TC14):** se qualquer rota tem trecho sem dado (pela API ou pela grade do aparelho), o app diz "Não dá para comparar" e mostra as rotas só como "Rota 1, Rota 2". É mais rígido que a regra de 70% da API, de propósito, para seguir o QA v2.
+- **Fora da área (CA4)** e **sem internet (CA5 · TC34):** avisos próprios; sem internet, o botão **Ver o mapa** leva ao Mapa com os dados salvos.
+- **Iniciar trajeto (CA6):** começa o acompanhamento com o caminho da rota escolhida (o Mapa desenha) e volta ao Início. Sem consentimento, pede antes (F08 CA4 · TC38).
+- **Linguagem (CA3):** só "menor risco registrado" e "melhor dado disponível no período".
+
+> Com o mock do Prism, a resposta de exemplo tem uma rota com 10% sem dado, então a tela mostra "Não dá para comparar" (é a regra do CA2 funcionando). Para ver o TC13 com as duas rotas, é preciso a API real ou um exemplo do Abner com as rotas 100% com dado.
+
+### Permissões e tema escuro (F02)
+
+- **Permissões** (`/permissoes`): aparece no primeiro acesso, antes da orientação do relógio, e pode ser reaberta em **Perfil > Permissões do celular**. Cada permissão (Localização, Notificações, Bluetooth) tem um cartão com o **motivo**, a situação com ícone e palavra (Permitida, Não permitida, Ainda não pedida, Indisponível aqui) e o botão **Permitir**. O pedido do sistema só aparece depois que a pessoa lê o motivo e toca (CA2).
+- **Se negar** (CA3, CA4): o app continua funcionando e o cartão diz o que parou: sem localização, a comparação de rotas e o alerta não funcionam, mas o mapa continua; sem notificações, **o relógio** deixa de receber; sem Bluetooth, **o Hoodi Pet** deixa de receber. O botão vira **Abrir configurações** (o sistema não pergunta de novo).
+- **No Expo Go**, o Bluetooth aparece como "Indisponível aqui" (só funciona no development build). No navegador, notificações e Bluetooth também.
+- **Tema escuro à noite** (CA5): depois das 18h, se o app estiver claro, o Início mostra "Já é noite" com **Usar tema escuro** (troca na hora) e um X que dispensa até o dia seguinte. A escolha fica em **Perfil > Aparência > Tema**.
+
+### Perfil e Dados e privacidade (F08)
+
+O **Perfil** funciona com ou sem conta; sem conta, mostra o convite para **Entrar** ou **Criar conta**.
+
+| Grupo | Linhas | QA |
+|---|---|---|
+| Alertas | **Avisar no celular também** (o celular vibra junto com o Pet em todo alerta, para quem leva o Pet na mochila), **Som no celular** (liga e desliga), **Antecedência do aviso** (100, 300 ou 600 m) e **Horário dos alertas** (sempre ou só à noite, 18h–6h). O valor escolhido aparece na linha | CA1 |
+| Canais de aviso | **Relógio** (reabre a orientação, F06 CA2) e **Hoodi Pet** (conectado, desconectado ou não pareado) | F05 CA2, F06 |
+| Segurança e dados | **Contatos de segurança** e **Dados e privacidade** | F09, CA3 |
+| Conta | **Sair**, com confirmação | CA6 |
+
+- As preferências ficam no aparelho (tabela `preferencias`, chave `preferencias_alertas`) e continuam valendo ao abrir o app de novo (CA2).
+- **Todas fazem efeito:** **avisar no celular também** (vibra o celular junto com o Pet), o **som** (dois canais de notificação no Android, com e sem som), o **horário** (fora dele, o alerta não dispara) e a **antecedência** (aviso antecipado, abaixo). A antiga "intensidade da vibração" saiu: o Pet v1 não tem intensidade, só o padrão por nível.
+- **Aviso antecipado:** durante o trajeto, quando o próximo trecho de maior risco fica a menos da antecedência escolhida (100, 300 ou 600 m), o celular e o relógio avisam "Risco alto à frente · Rua X, em 280 m · Mantenha o celular guardado…". Um aviso por trecho; some sozinho e não entra no Histórico (o alerta de verdade continua sendo ao entrar na área, F07).
+- **Tema:** em Aparência, "Igual ao celular", "Escuro" ou "Claro".
+
+**Dados e privacidade** (`/privacidade`):
+- O que fica no aparelho e o que sai, e que o risco vem da SSP-SP (CA3 · TC32).
+- **Revogar consentimento** (CA4 · TC38): com confirmação; os alertas param e o app explica como dar de novo (**Dar consentimento**). Sem consentimento, Comparar rotas pede o consentimento antes de iniciar o trajeto.
+- **Excluir conta** (CA5 · TC39): abre uma folha que explica o que é apagado e **pede a senha** (`DELETE /v1/conta` com `{ senha }`, v0.6 do Abner). A API apaga conta, sessões, convites, vínculos dos dois lados e tokens de push numa transação, e o app volta ao Início sem conta. Senha errada (403 `SENHA_INVALIDA`): "Senha incorreta. Nada foi apagado."
 
 ### Parear hoodi Pet e hoodi Pet conectado (F06)
 
-- **Parear** (`/pet/parear`): um **radar em Lottie** roda enquanto procura. Ao abrir, procura os Pets por perto por 15 s e lista com o sinal ("Sinal forte · a menos de 1 m"). Tocar em **Parear** conecta, grava o token deste celular no Pet e abre a tela do Pet.
+- **Parear** (`/pet/parear`): um **radar em Lottie** roda enquanto procura. Ao abrir, procura os Pets por perto por 15 s e lista com o sinal ("Sinal forte · a menos de 1 m"). Tocar em **Parear** conecta e o celular pede o **código de 6 dígitos que aparece na tela do Pet** (pareamento do sistema); depois abre a tela do Pet.
 - **Avisos:** Expo Go sem Bluetooth, permissão negada (**Permitir**), Bluetooth desligado (CA6), nenhum Pet encontrado com dicas e **Procurar de novo** (CA7), e sempre "Só este celular comanda o Pet" (CA9).
 - **hoodi Pet conectado** (`/pet/conectado`): estado da conexão, as três carinhas (tranquila, atenta, preocupada), **Testar vibração** (CA5) e **Desconectar** com confirmação.
 - **Início:** o indicador **hoodi Pet** fica verde quando conectado e mostra **Conectar** quando não há Pet; tocar abre o pareamento ou a tela do Pet.
@@ -294,22 +342,28 @@ Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por 
 
 "Radar", de Debashish Nabajja, no [LottieFiles](https://lottiefiles.com/10336-radar), sob a Lottie Simple License. O arquivo original usava expressões, que o Lottie nativo não executa; elas foram convertidas em quadros-chave em [`assets/animacoes/busca-radar.json`](assets/animacoes/busca-radar.json). As cores são trocadas pelas do tema em tempo de execução, e a animação fica parada com "Reduzir movimento" ligado. Na pré-visualização web aparece a carinha "procurando" no lugar.
 
-#### Protocolo BLE com o hoodi Pet (PROVISÓRIO, a combinar com o Nando)
+#### Protocolo BLE com o hoodi Pet (v1, o do firmware)
+
+Especificação completa no repositório da API: `iot/hoodi-pet/docs/PROTOCOLO_BLE.md`. Os valores ficam em [`src/features/pet/protocolo.ts`](src/features/pet/protocolo.ts).
 
 | Item | Valor |
 |---|---|
-| Nome anunciado | `hoodi Pet XXXX` (4 últimos dígitos hex do MAC) |
-| Serviço | `f3a1c0de-0001-4b6f-8f0d-686f6f646900` |
-| Característica de pareamento (write) | `f3a1c0de-0002-4b6f-8f0d-686f6f646900` · recebe o token de 8 bytes |
-| Característica de comando (write) | `f3a1c0de-0003-4b6f-8f0d-686f6f646900` · token (8) + comando (1) + argumento (1) |
+| Nome anunciado | `hoodi Pet XXXX` |
+| Serviço | `a70ab40e-599a-4803-89db-3b1667e7d753` |
+| Comando (write) | `ad7790b4-bf5d-4ee2-a6b2-5faac8195117` · 9 bytes: versão, tipo, sequência (u32 LE), nível, padrão, carinha |
+| Status (read/notify) | `147dca7f-bc45-4789-85bb-adc57bc40124` |
+| Evento (notify) | `6e9d9b1f-3aef-4015-a8ab-162399270a78` · clique ou pressão longa no botão do Pet |
 
-| Comando | Byte | Argumento | O que o Pet faz |
+| Nível no app | Nível no Pet | Vibração | Carinha |
 |---|---|---|---|
-| Alerta | `0x01` | `0` tranquila · `1` atenta · `2` preocupada | Mostra a carinha e vibra no padrão do nível |
-| Teste | `0x02` | `0` | Passa pelas três carinhas, vibrando em cada uma (F06 CA5) |
-| Esquecer | `0x03` | `0` | Apaga o token (desfaz o pareamento) |
+| Tranquila | 0 | curta | tranquila |
+| Médio | 1 | dupla | atenta |
+| Alto | 3 | longa | preocupada |
+| Sem dado | sem dado | nunca vibra | `?` |
 
-**Só este celular comanda o Pet (CA9):** o Pet guarda o token recebido no pareamento (NVS do ESP32) e ignora comandos que não começam com ele. Para parear com outro celular, o Pet precisa ser resetado (por exemplo, segurando o botão). Os valores ficam em [`src/features/pet/protocolo.ts`](src/features/pet/protocolo.ts).
+**Só este celular comanda o Pet (CA9):** o pareamento é o do sistema (bonding com código). Na primeira conexão o Pet mostra um código de 6 dígitos e o celular pede para digitar. Depois disso o Pet só aceita este celular. Para trocar de celular: segurar o botão do Pet enquanto liga (modo pareamento por 2 min). **Desconectar** no app esquece o Pet só do lado do app.
+
+**Reforço do alerta:** quando o Pet vibra por risco, o app espera o "vi" (um clique no botão do Pet). Sem clique em 20 s, o Pet vibra de novo e o celular também (uma vez). Fora dessa espera, o clique só acende a tela do Pet. **Pet desconectado na hora do alerta:** o celular vibra direto. **"Avisar no celular também"** (Perfil): o celular vibra junto com o Pet em todo alerta.
 
 #### Testar o Bluetooth (development build)
 
@@ -322,7 +376,7 @@ No iPhone, o development build exige conta paga da Apple; por isso, o teste de B
 ### Configurar o relógio (F06 CA1, CA2)
 
 - Tela `/relogio`: "Receba o aviso no pulso", três passos (ativar as notificações do hoodi, háptico forte, exceção no modo Foco) e uma observação por plataforma (no iPhone, o aviso só chega ao relógio com o celular bloqueado).
-- **Aparece uma vez:** no primeiro acesso o Início abre a tela sozinho. Quando as Permissões (F02) existirem, elas devem abrir `/relogio` logo depois.
+- **Aparece uma vez:** no primeiro acesso, logo depois das Permissões (F02).
 - **Concluí:** marca o relógio como canal de aviso; o indicador **Relógio** do Início fica verde. O app não consegue detectar o relógio, então vale a confirmação da pessoa.
 - **Fazer depois:** fecha sem ativar; o indicador **Relógio** mostra **Configurar** e reabre a tela. O Perfil (F08) pode abrir `/relogio` para rever os passos.
 - Fica salvo na tabela `preferencias` (`relogio_orientacao_vista` e `relogio_configurado`).
@@ -333,14 +387,14 @@ O "motor" do app. Com a localização permitida e o app aberto, ele segue o GPS,
 
 1. **Aviso na tela**, por cima de qualquer aba (componente "Alerta de risco" do design system): Risco alto em vermelho com **Ver desvio**, fica até a pessoa agir ou sair da área (CA6); Risco médio em âmbar, some sozinho.
 2. **Notificação** do celular, que o **relógio espelha** (o app não fala direto com o relógio).
-3. **hoodi Pet** vibra e mostra a carinha do nível (comando `0x01` do protocolo).
+3. **hoodi Pet** vibra e mostra a carinha do nível. Sem clique no Pet em 20 s, vibra de novo junto com o celular (reforço). Fora dos alertas, a carinha acompanha o nível sem vibrar, e no fim do trajeto o Pet dorme.
 4. **Histórico:** o alerta é salvo na tabela `alertas`.
 5. O trajeto soma o alerta e recalcula o **próximo trecho de maior risco** pelo caminho.
 
 | Regra | Como o app faz | QA |
 |---|---|---|
 | Alerta só quando o nível sobe | Compara com o último nível com dado | CA1, CA2 |
-| Intervalo mínimo | 2 minutos entre dois alertas | CA3 |
+| Intervalo mínimo | 2 minutos entre dois alertas. Subida dentro desse tempo fica pendente e alerta quando o intervalo acaba, se a pessoa ainda estiver acima do nível do último alerta | CA3 |
 | Divisa entre células | Só troca de célula depois de entrar 30 m na nova | CA4 |
 | Sem dado | Nunca alerta e não conta como nível conhecido | CA5 |
 | Texto | o quê + onde + o que fazer, sem "!" | CA7 |
@@ -371,7 +425,7 @@ O app usa **SQLite** (`expo-sqlite`), aberto em [`src/db/banco.ts`](src/db/banco
 |---|---|---|
 | `grade_risco` | Última grade de risco válida, para o Mapa e o alerta funcionarem sem internet | F03 |
 | `alertas` | Histórico de alertas (data, nível e trecho) | F10 |
-| `pet_pareado` | hoodi Pet pareado e o token deste celular | F06 |
+| `pet_pareado` | hoodi Pet pareado (a coluna `token_hex` fica vazia no protocolo v1) | F06 |
 | `preferencias` | Preferências em chave/valor (orientação do relógio; pode ser usada pelo Perfil) | F06, F08 |
 
 Tudo fica só no aparelho. Na pré-visualização web, que não tem SQLite, os repositórios `.web.ts` usam o `localStorage`.

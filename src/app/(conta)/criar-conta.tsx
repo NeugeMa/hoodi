@@ -16,6 +16,7 @@ import { registrar } from '@/features/conta/auth-api';
 import { guardarCadastro, IDADE_MINIMA, idadeEm } from '@/features/conta/cadastro-pendente';
 import { carinhaDaConta } from '@/features/conta/carinha-conta';
 import { emailValido, NOME_MIN, SENHA_MIN } from '@/features/conta/tipos';
+import { usePreferencias } from '@/features/preferencias/preferencias-context';
 import { PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 import { espaco, raio } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
@@ -44,6 +45,7 @@ type Campo = 'nome' | 'email' | 'senha' | null;
  */
 export default function CriarContaScreen() {
   const { cores } = useTema();
+  const { darConsentimento } = usePreferencias();
   const emailRef = useRef<TextInputInstance>(null);
   const senhaRef = useRef<TextInputInstance>(null);
   const [nome, setNome] = useState('');
@@ -86,7 +88,7 @@ export default function CriarContaScreen() {
       await salvarPreferencia(PREF.cadastroEmail, email.trim());
       await salvarPreferencia(PREF.cadastroNome, nome.trim());
       await salvarPreferencia(PREF.maioridadeConfirmadaEm, agora);
-      await salvarPreferencia(PREF.consentimentoEm, agora);
+      await darConsentimento();
       router.replace('/verificar-email');
     } catch (e) {
       if (ehErroHttp(e, 400)) setErros((x) => ({ ...x, email: ERRO_EMAIL }));

@@ -17,6 +17,7 @@ import { ContaProvider, useConta } from '@/features/conta/conta-context';
 import { ContatosProvider } from '@/features/contatos/contatos-context';
 import { GradeProvider } from '@/features/grade/grade-context';
 import { PetProvider } from '@/features/pet/pet-context';
+import { PreferenciasProvider } from '@/features/preferencias/preferencias-context';
 import { TrajetoProvider } from '@/features/trajeto/trajeto-context';
 import { useTema } from '@/theme/use-tema';
 
@@ -43,19 +44,21 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={tema}>
       <ContaProvider>
-        <GradeProvider>
-          <TrajetoProvider>
-            <ContatosProvider>
-              <PetProvider>
-                <AcompanhamentoProvider>
-                  <Navegacao />
-                  {/* Alerta de risco por cima de qualquer tela (F07). */}
-                  <AvisoRisco />
-                </AcompanhamentoProvider>
-              </PetProvider>
-            </ContatosProvider>
-          </TrajetoProvider>
-        </GradeProvider>
+        <PreferenciasProvider>
+          <GradeProvider>
+            <TrajetoProvider>
+              <ContatosProvider>
+                <PetProvider>
+                  <AcompanhamentoProvider>
+                    <Navegacao />
+                    {/* Alerta de risco por cima de qualquer tela (F07). */}
+                    <AvisoRisco />
+                  </AcompanhamentoProvider>
+                </PetProvider>
+              </ContatosProvider>
+            </TrajetoProvider>
+          </GradeProvider>
+        </PreferenciasProvider>
       </ContaProvider>
       <StatusBar style={escuro ? 'light' : 'dark'} />
     </ThemeProvider>
@@ -86,8 +89,11 @@ function Navegacao() {
       <Stack.Screen name="pet/parear" />
       <Stack.Screen name="pet/conectado" />
       <Stack.Screen name="relogio" />
-      {/* Só o que depende da conta pede login (contatos e pedido de ajuda, F09). */}
+      <Stack.Screen name="privacidade" />
+      <Stack.Screen name="permissoes" />
+      {/* Só o que depende da conta pede login: contatos e pedido de ajuda (F09) e rotas (F04, a API exige conta). */}
       <Stack.Protected guard={logado} redirectTo="/entrar">
+        <Stack.Screen name="comparar-rotas" />
         <Stack.Screen name="contatos" />
         <Stack.Screen name="pedir-ajuda" options={{ presentation: 'modal' }} />
         <Stack.Screen name="ajuda/[id]" />

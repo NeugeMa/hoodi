@@ -1,6 +1,10 @@
 import { abrirBanco } from '@/db/banco';
 
-/** hoodi Pet pareado com este celular (F06). O token só existe neste aparelho e no Pet. */
+/**
+ * hoodi Pet pareado com este celular (F06).
+ * tokenHex não é mais usado: no protocolo v1 o pareamento é o do sistema (código na tela do Pet).
+ * Fica gravado vazio para não precisar migrar a tabela pet_pareado.
+ */
 export type PetPareado = { dispositivoId: string; nome: string; tokenHex: string; pareadoEm: string };
 
 type Linha = { dispositivo_id: string; nome: string; token_hex: string; pareado_em: string };

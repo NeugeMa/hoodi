@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Bluetooth, BluetoothSlash, WarningCircle } from '@/components/icones';
+import { Bluetooth, BluetoothSlash, Lock, WarningCircle } from '@/components/icones';
 import { AnimacaoBusca } from '@/components/pet/animacao-busca';
 import { CabecalhoVoltar } from '@/components/pet/cabecalho-voltar';
 import { ItemPet } from '@/components/pet/item-pet';
@@ -82,6 +82,15 @@ export default function ParearPetScreen() {
                 </Texto>
               ) : null}
             </View>
+          ) : null}
+
+          {/* Protocolo v1: o pareamento é o do sistema, com o código que aparece na tela do Pet. */}
+          {pareandoId ? (
+            <Aviso
+              icone={Lock}
+              titulo="Digite o código do Pet"
+              texto="Um código de 6 dígitos aparece na tela do Hoodi Pet. Quando o celular pedir, digite esse código."
+            />
           ) : null}
 
           {erro ? <Aviso icone={WarningCircle} tom="atencao" titulo="Algo deu errado" texto={erro} /> : null}

@@ -14,6 +14,9 @@ import { detalheDoPanico, marcarAberto, type PanicoDetalhe } from '@/features/aj
 import { espaco, raio } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
+/** Nome que a API usa no histórico quando quem pediu ajuda excluiu a conta (v0.6). */
+const CONTA_EXCLUIDA = 'Conta excluída';
+
 /** Endereço em texto a partir da posição aproximada (no aparelho de quem recebe). */
 async function enderecoAproximado(latitude: number, longitude: number) {
   if (Platform.OS === 'web') return null;
@@ -77,6 +80,8 @@ export default function PedidoRecebidoScreen() {
   }
 
   const temPosicao = pedido && pedido.latitude !== null && pedido.longitude !== null;
+  // Quem pediu excluiu a conta depois: a API mantém o histórico sem nome nem posição.
+  const contaExcluida = pedido?.titularNome === CONTA_EXCLUIDA;
 
   return (
     <TelaConta
@@ -95,7 +100,9 @@ export default function PedidoRecebidoScreen() {
           <View style={[styles.cartao, { backgroundColor: cores.perigoFundo }]}>
             <Siren size={28} color={cores.perigoTexto} weight="fill" />
             <View style={styles.textos}>
-              <Texto variante="subtitulo">{pedido.titularNome} pediu ajuda</Texto>
+              <Texto variante="subtitulo">
+                {contaExcluida ? 'Pedido de ajuda de uma conta excluída' : `${pedido.titularNome} pediu ajuda`}
+              </Texto>
               <Texto variante="legenda" cor="grafite">
                 Às {horaCurta(pedido.registradoEm)},{' '}
                 {new Date(pedido.registradoEm).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
@@ -118,7 +125,10 @@ export default function PedidoRecebidoScreen() {
           {pedido.observacao ? <Texto>{pedido.observacao}</Texto> : null}
 
           <Texto variante="legenda">
-            Tente falar com {pedido.titularNome}. O Hoodi nunca pede login, senha, dinheiro nem instalação. Se não
+            {contaExcluida
+              ? 'A pessoa excluiu a conta do Hoodi, então o nome e a posição não aparecem mais.'
+              : `Tente falar com ${pedido.titularNome}.`}{' '}
+            O Hoodi nunca pede login, senha, dinheiro nem instalação. Se não
             reconhece, ignore.
           </Texto>
         </>

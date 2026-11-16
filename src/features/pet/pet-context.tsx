@@ -1,4 +1,3 @@
-import { getRandomBytes } from 'expo-crypto';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { NivelRisco } from '@/features/risco/nivel';
@@ -9,9 +8,10 @@ import {
   conectar,
   desconectar,
   enviarComando,
-  gravarToken,
+  garantirPareamento,
   observarBluetooth,
   observarDesconexao,
+  observarEventos,
   pedirPermissoes,
   SUPORTE,
   type EstadoBluetooth,
@@ -19,10 +19,14 @@ import {
   type Suporte,
 } from './pet-ble';
 import { esquecerPetPareado, lerPetPareado, salvarPetPareado, type PetPareado } from './pet-repo';
-import { COMANDO, deHex, NIVEL_PET, paraHex, TAMANHO_TOKEN } from './protocolo';
+import { EXPRESSAO, montarEstado, montarSimples, NIVEL_PET, PADRAO, Sequencia, TIPO, type EventoPet } from './protocolo';
 
 /** Quanto tempo a busca roda antes de dizer que não achou nenhum Pet (F06 CA7). */
 const TEMPO_BUSCA_MS = 15_000;
+/** Intervalo entre as carinhas no Testar vibração (dá tempo de sentir cada padrão). */
+const INTERVALO_TESTE_MS = 1_800;
+
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type PetContexto = {
   suporte: Suporte;
@@ -40,8 +44,15 @@ type PetContexto = {
   pararBusca: () => void;
   parear: (pet: PetEncontrado) => Promise<boolean>;
   testarVibracao: () => Promise<void>;
-  /** Para o alerta de risco (F07): carinha e vibração do nível. "Sem dado" nunca alerta. */
-  enviarNivel: (nivel: NivelRisco) => Promise<void>;
+  /**
+   * Carinha do nível no Pet (F07). Com vibrar (padrão), vibra no padrão do nível: é o alerta.
+   * Sem vibrar, só troca a carinha (ex.: saiu da área de risco). "Sem dado" mostra "?" e nunca vibra.
+   */
+  enviarNivel: (nivel: NivelRisco, opcoes?: { vibrar?: boolean }) => Promise<void>;
+  /** Fim do trajeto: o Pet mostra a carinha dormindo. */
+  fimTrajeto: () => Promise<void>;
+  /** Clique ou pressão longa no botão do Pet. Devolve a função que para de ouvir. */
+  aoEvento: (callback: (evento: EventoPet) => void) => () => void;
   esquecer: () => Promise<void>;
 };
 
@@ -66,6 +77,12 @@ export function PetProvider({ children }: { children: ReactNode }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const quantosRef = useRef(0);
   const pararObservarRef = useRef<(() => void) | null>(null);
+  const pararEventosRef = useRef<(() => void) | null>(null);
+  const ouvintesRef = useRef(new Set<(evento: EventoPet) => void>());
+  /** O Pet zera a sequência a cada conexão: o app também (protocolo v1). */
+  const sequenciaRef = useRef(new Sequencia());
+  /** Último nível mostrado, para voltar a ele depois do Testar vibração. */
+  const ultimoNivelRef = useRef<NivelRisco | null>(null);
 
   /** Atualiza o estado local e os canais do Início juntos. */
   const marcar = useCallback(
@@ -77,11 +94,20 @@ export function PetProvider({ children }: { children: ReactNode }) {
     [atualizarCanais],
   );
 
-  /** Liga o aviso de queda de conexão (F06 CA8). */
+  /** Liga o aviso de queda de conexão (F06 CA8) e os eventos do botão do Pet. */
   const vigiar = useCallback(
     (pet: PetPareado) => {
+      sequenciaRef.current.reiniciar();
       pararObservarRef.current?.();
-      pararObservarRef.current = observarDesconexao(pet.dispositivoId, () => marcar(false, pet));
+      pararEventosRef.current?.();
+      pararEventosRef.current = observarEventos(pet.dispositivoId, (evento) => {
+        ouvintesRef.current.forEach((ouvinte) => ouvinte(evento));
+      });
+      pararObservarRef.current = observarDesconexao(pet.dispositivoId, () => {
+        pararEventosRef.current?.();
+        pararEventosRef.current = null;
+        marcar(false, pet);
+      });
     },
     [marcar],
   );
@@ -95,6 +121,7 @@ export function PetProvider({ children }: { children: ReactNode }) {
       if (SUPORTE !== 'ok') return;
       try {
         await conectar(pet.dispositivoId);
+        await garantirPareamento(pet.dispositivoId); // já pareado: passa direto
         if (ativo) {
           marcar(true, pet);
           vigiar(pet);
@@ -160,12 +187,12 @@ export function PetProvider({ children }: { children: ReactNode }) {
       setPareandoId(pet.id);
       try {
         await conectar(pet.id);
-        const token = getRandomBytes(TAMANHO_TOKEN);
-        await gravarToken(pet.id, token);
+        // O celular pede o código que aparece na tela do Pet (pareamento do sistema, CA9).
+        await garantirPareamento(pet.id);
         const novo: PetPareado = {
           dispositivoId: pet.id,
           nome: pet.nome,
-          tokenHex: paraHex(token),
+          tokenHex: '', // não usado no protocolo v1 (ver pet-repo.ts)
           pareadoEm: new Date().toISOString(),
         };
         await salvarPetPareado(novo);
@@ -174,7 +201,9 @@ export function PetProvider({ children }: { children: ReactNode }) {
         return true;
       } catch {
         await desconectar(pet.id);
-        setErro('Não deu para parear. Aproxime o Pet e tente de novo.');
+        setErro(
+          'Não deu para parear. Confira o código que aparece no Pet. Se ele já estava pareado com outro celular, segure o botão enquanto liga o Pet e tente de novo.',
+        );
         return false;
       } finally {
         setPareandoId(null);
@@ -183,11 +212,12 @@ export function PetProvider({ children }: { children: ReactNode }) {
     [marcar, pararBusca, vigiar],
   );
 
+  /** Monta o comando com a próxima sequência e escreve. Sem Pet conectado, não faz nada. */
   const comando = useCallback(
-    async (cmd: number, arg = 0) => {
+    async (montar: (sequencia: number) => Uint8Array) => {
       if (!pareado || !conectado) return;
       try {
-        await enviarComando(pareado.dispositivoId, deHex(pareado.tokenHex), cmd, arg);
+        await enviarComando(pareado.dispositivoId, montar(sequenciaRef.current.proxima()));
       } catch {
         setErro('O Hoodi Pet não respondeu. Veja se ele está ligado e perto.');
       }
@@ -195,26 +225,61 @@ export function PetProvider({ children }: { children: ReactNode }) {
     [pareado, conectado],
   );
 
-  const testarVibracao = useCallback(() => comando(COMANDO.teste), [comando]);
-
   const enviarNivel = useCallback(
-    async (nivel: NivelRisco) => {
-      if (nivel === 'sem-dado') return;
-      const arg = nivel === 'tranquila' ? NIVEL_PET.tranquila : nivel === 'medio' ? NIVEL_PET.atenta : NIVEL_PET.preocupada;
-      await comando(COMANDO.alerta, arg);
+    async (nivel: NivelRisco, opcoes?: { vibrar?: boolean }) => {
+      ultimoNivelRef.current = nivel;
+      if (nivel === 'sem-dado') {
+        // "?" na tela, sem vibrar (F07 CA5).
+        await comando((s) => montarEstado(s, null, PADRAO.nenhum, EXPRESSAO.semDado));
+        return;
+      }
+      const p = NIVEL_PET[nivel];
+      const vibrar = opcoes?.vibrar ?? true;
+      await comando((s) => montarEstado(s, p.nivel, vibrar ? p.padrao : PADRAO.nenhum, p.expressao));
     },
     [comando],
   );
 
+  /** Teste (F06 CA5): passa pelas três carinhas vibrando no padrão de cada uma e volta ao nível atual. */
+  const testarVibracao = useCallback(async () => {
+    for (const nivel of ['tranquila', 'medio', 'alto'] as const) {
+      const p = NIVEL_PET[nivel];
+      await comando((s) => montarEstado(s, p.nivel, p.padrao, p.expressao));
+      await esperar(INTERVALO_TESTE_MS);
+    }
+    const atual = ultimoNivelRef.current;
+    if (atual) await enviarNivel(atual, { vibrar: false });
+    // Fora de trajeto o Pet fica dormindo. Fim do trajeto (e não Estado) para o Pet não achar
+    // que há trajeto ativo e avisar a desconexão do celular depois.
+    else await comando((s) => montarSimples(TIPO.fimTrajeto, s));
+  }, [comando, enviarNivel]);
+
+  const fimTrajeto = useCallback(async () => {
+    ultimoNivelRef.current = null;
+    await comando((s) => montarSimples(TIPO.fimTrajeto, s));
+  }, [comando]);
+
+  const aoEvento = useCallback((callback: (evento: EventoPet) => void) => {
+    ouvintesRef.current.add(callback);
+    return () => {
+      ouvintesRef.current.delete(callback);
+    };
+  }, []);
+
+  /**
+   * No protocolo v1 o Pet guarda o pareamento do sistema; ele só aceita outro celular
+   * quando alguém segura o botão enquanto liga. Aqui o app esquece o Pet do lado dele.
+   */
   const esquecer = useCallback(async () => {
     if (pareado) {
-      await comando(COMANDO.esquecer);
       pararObservarRef.current?.();
+      pararEventosRef.current?.();
+      pararEventosRef.current = null;
       await desconectar(pareado.dispositivoId);
     }
     await esquecerPetPareado();
     marcar(false, null);
-  }, [comando, marcar, pareado]);
+  }, [marcar, pareado]);
 
   const valor = useMemo<PetContexto>(
     () => ({
@@ -232,9 +297,11 @@ export function PetProvider({ children }: { children: ReactNode }) {
       parear,
       testarVibracao,
       enviarNivel,
+      fimTrajeto,
+      aoEvento,
       esquecer,
     }),
-    [bluetooth, pareado, conectado, buscando, encontrados, buscaVazia, pareandoId, erro, iniciarBusca, pararBusca, parear, testarVibracao, enviarNivel, esquecer],
+    [bluetooth, pareado, conectado, buscando, encontrados, buscaVazia, pareandoId, erro, iniciarBusca, pararBusca, parear, testarVibracao, enviarNivel, fimTrajeto, aoEvento, esquecer],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
