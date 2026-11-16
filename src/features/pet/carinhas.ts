@@ -1,20 +1,32 @@
 import type { NivelRisco } from '@/features/risco/nivel';
 
+import desenhos from './carinhas.json';
+
 /**
- * Carinhas do hoodi Pet em pixel art, no mesmo formato da tela OLED do Pet.
- * Grade de 17 × 12 pixels. Os desenhos abaixo são feitos numa grade de trabalho
- * de 21 × 14 (centro na coluna 10) e recortados com DESLOCAMENTO na hora de desenhar.
- * Cada estado é uma sequência de quadros (como um bichinho virtual de LCD).
- * Os mesmos desenhos podem ser levados para o firmware do Pet.
+ * Carinhas do Hoodi Pet em pixel art, as MESMAS da tela OLED do Pet.
+ * Os desenhos vêm de carinhas.json (18 × 12), gerado pelo scripts/gerar_carinhas.py do firmware:
+ * mudou lá, é só copiar o JSON novo para cá que o app e o Pet continuam iguais.
+ * O app só anima: pisca (quadros "piscando" do JSON), respira, olha para os lados e treme.
  */
 
-export const LARGURA = 17;
-export const ALTURA = 12;
-/** Recorte da grade de trabalho (21 × 14) para a tela (17 × 12). */
-const DESLOCAMENTO = { x: -2, y: -1 };
+export const LARGURA: number = desenhos.largura;
+export const ALTURA: number = desenhos.altura;
 
-/** tranquila/atenta/preocupada vêm do design system; confusa, procurando e timida são extras do app. */
-export type Carinha = 'tranquila' | 'atenta' | 'preocupada' | 'confusa' | 'procurando' | 'timida';
+/**
+ * tranquila, atenta e preocupada: níveis do design system. confusa = "desconhecido" do JSON (Sem dado).
+ * alerta, dormindo e desconectado: estados do Pet. procurando e timida: extras do app
+ * (posição desconhecida; olhos fechados enquanto a pessoa digita a senha).
+ */
+export type Carinha =
+  | 'tranquila'
+  | 'atenta'
+  | 'preocupada'
+  | 'alerta'
+  | 'confusa'
+  | 'dormindo'
+  | 'desconectado'
+  | 'procurando'
+  | 'timida';
 
 export type Quadro = {
   /** Pixels acesos como [x, y]. */
@@ -42,157 +54,82 @@ export const NOME_CARINHA: Record<Carinha, string> = {
   tranquila: 'tranquila',
   atenta: 'atenta',
   preocupada: 'preocupada',
-  confusa: 'confusa',
+  alerta: 'em alerta',
+  confusa: 'confusa, sem dado',
+  dormindo: 'dormindo',
+  desconectado: 'sem conexão com o celular',
   procurando: 'procurando você',
   timida: 'de olhos fechados, sem olhar a sua senha',
 };
 
-// ---------- Partes do rosto ----------
+// ---------- Leitura do JSON ----------
 
-type Olhos = 'abertos' | 'piscando' | 'felizes';
-type Boca = 'sorriso' | 'reta' | 'triste' | 'ondulada' | 'pontos1' | 'pontos2' | 'pontos3';
-type Extra = 'sobrancelhasBravas' | 'interrogacao';
+type Linhas = string[];
 
-type Rosto = {
-  olhos: Olhos;
-  boca: Boca;
-  extras?: Extra[];
-  /** Deslocamento só dos olhos (olhar para o lado ou para cima). */
-  olharX?: number;
-  olharY?: number;
-  /** Deslocamento do rosto inteiro (respirar, tremer). */
-  dx?: number;
-  dy?: number;
-};
-
-const OLHO_ESQ = 6;
-const OLHO_DIR = 13;
-const OLHO_Y = 4;
-
-function olhos(tipo: Olhos, ox: number, oy: number): [number, number][] {
+/** Linhas do JSON ('#' aceso, '.' apagado) → pixels acesos, com deslocamento e recorte na tela. */
+function pixelsDe(linhas: Linhas, dx = 0, dy = 0): [number, number][] {
   const px: [number, number][] = [];
-  for (const x of [OLHO_ESQ, OLHO_DIR]) {
-    if (tipo === 'abertos') {
-      for (let dy = 0; dy < 3; dy++) px.push([x + ox, OLHO_Y + dy + oy], [x + 1 + ox, OLHO_Y + dy + oy]);
-    } else if (tipo === 'piscando') {
-      px.push([x + ox, OLHO_Y + 2 + oy], [x + 1 + ox, OLHO_Y + 2 + oy]);
-    } else {
-      // Olhos fechados de felicidade: um arco ∩.
-      px.push([x, OLHO_Y + 1], [x + 1, OLHO_Y + 1], [x - 1, OLHO_Y + 2], [x + 2, OLHO_Y + 2]);
+  linhas.forEach((linha, y) => {
+    for (let x = 0; x < linha.length; x++) {
+      if (linha[x] !== '#') continue;
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx >= 0 && nx < LARGURA && ny >= 0 && ny < ALTURA) px.push([nx, ny]);
     }
-  }
+  });
   return px;
 }
 
-function linha(x0: number, x1: number, y: number): [number, number][] {
-  const px: [number, number][] = [];
-  for (let x = x0; x <= x1; x++) px.push([x, y]);
-  return px;
-}
+const C = desenhos.carinhas;
+const PISCANDO = desenhos.piscando;
 
-function boca(tipo: Boca): [number, number][] {
-  switch (tipo) {
-    case 'sorriso':
-      return [[7, 9], [13, 9], ...linha(8, 12, 10)];
-    case 'reta':
-      return linha(8, 12, 10);
-    case 'triste':
-      return [...linha(8, 12, 9), [7, 10], [13, 10]];
-    case 'ondulada':
-      return [[7, 10], [8, 9], [9, 10], [10, 9], [11, 10], [12, 9], [13, 10]];
-    case 'pontos1':
-      return [[8, 10]];
-    case 'pontos2':
-      return [[8, 10], [10, 10]];
-    case 'pontos3':
-      return [[8, 10], [10, 10], [12, 10]];
-  }
-}
-
-function extra(tipo: Extra): [number, number][] {
-  switch (tipo) {
-    case 'sobrancelhasBravas':
-      // Ponta de dentro mais baixa: cara de preocupação.
-      return [[5, 1], [6, 2], [7, 2], [15, 1], [14, 2], [13, 2]];
-    case 'interrogacao':
-      return [[16, 2], [17, 2], [15, 3], [18, 3], [18, 4], [17, 5], [17, 6], [17, 8]];
-  }
-}
-
-function desenhar(r: Rosto): [number, number][] {
-  const dx = (r.dx ?? 0) + DESLOCAMENTO.x;
-  const dy = (r.dy ?? 0) + DESLOCAMENTO.y;
-  const px = [
-    ...olhos(r.olhos, r.olharX ?? 0, r.olharY ?? 0),
-    ...boca(r.boca),
-    ...(r.extras ?? []).flatMap(extra),
-  ];
-  // Partes podem acender o mesmo pixel; guarda cada pixel uma vez só.
-  const unicos = new Map<string, [number, number]>();
-  for (const [x0, y0] of px) {
-    const x = x0 + dx;
-    const y = y0 + dy;
-    if (x >= 0 && x < LARGURA && y >= 0 && y < ALTURA) unicos.set(`${x},${y}`, [x, y]);
-  }
-  return [...unicos.values()];
-}
-
-function q(rosto: Rosto, ms: number): Quadro {
-  return { pixels: desenhar(rosto), ms };
+function q(linhas: Linhas, ms: number, dx = 0, dy = 0): Quadro {
+  return { pixels: pixelsDe(linhas, dx, dy), ms };
 }
 
 // ---------- Animações ----------
 
 export const QUADROS: Record<Carinha, Quadro[]> = {
-  // Respira devagar, pisca e às vezes fecha os olhos de felicidade.
+  // Respira devagar e pisca.
   tranquila: [
-    q({ olhos: 'abertos', boca: 'sorriso' }, 1000),
-    q({ olhos: 'abertos', boca: 'sorriso', dy: -1 }, 500),
-    q({ olhos: 'abertos', boca: 'sorriso' }, 1000),
-    q({ olhos: 'piscando', boca: 'sorriso' }, 130),
-    q({ olhos: 'abertos', boca: 'sorriso' }, 700),
-    q({ olhos: 'felizes', boca: 'sorriso' }, 1100),
+    q(C.tranquila, 1600),
+    q(C.tranquila, 500, 0, -1),
+    q(C.tranquila, 1200),
+    q(PISCANDO.tranquila, 140),
+    q(C.tranquila, 900),
   ],
   // Olha para um lado e para o outro, prestando atenção.
   atenta: [
-    q({ olhos: 'abertos', boca: 'reta' }, 900),
-    q({ olhos: 'abertos', boca: 'reta', olharX: -1 }, 700),
-    q({ olhos: 'abertos', boca: 'reta' }, 400),
-    q({ olhos: 'abertos', boca: 'reta', olharX: 1 }, 700),
-    q({ olhos: 'abertos', boca: 'reta' }, 500),
-    q({ olhos: 'piscando', boca: 'reta' }, 130),
+    q(C.atenta, 900),
+    q(C.atenta, 700, -1),
+    q(C.atenta, 400),
+    q(C.atenta, 700, 1),
+    q(C.atenta, 500),
+    q(PISCANDO.atenta, 140),
   ],
-  // Treme rápido, para depois de um tempo e treme de novo.
+  // Treme rápido, para um pouco e treme de novo.
   preocupada: [
-    q({ olhos: 'abertos', boca: 'triste', extras: ['sobrancelhasBravas'], dx: -1 }, 90),
-    q({ olhos: 'abertos', boca: 'triste', extras: ['sobrancelhasBravas'], dx: 1 }, 90),
-    q({ olhos: 'abertos', boca: 'triste', extras: ['sobrancelhasBravas'], dx: -1 }, 90),
-    q({ olhos: 'abertos', boca: 'triste', extras: ['sobrancelhasBravas'], dx: 1 }, 90),
-    q({ olhos: 'abertos', boca: 'triste', extras: ['sobrancelhasBravas'] }, 900),
-    q({ olhos: 'piscando', boca: 'triste', extras: ['sobrancelhasBravas'] }, 130),
-    q({ olhos: 'abertos', boca: 'triste', extras: ['sobrancelhasBravas'] }, 700),
+    q(C.preocupada, 90, -1),
+    q(C.preocupada, 90, 1),
+    q(C.preocupada, 90, -1),
+    q(C.preocupada, 90, 1),
+    q(C.preocupada, 1100),
   ],
-  // Sem dado: não sabe dizer. Nunca sorri (sem dado não é área tranquila).
-  confusa: [
-    q({ olhos: 'abertos', boca: 'ondulada', extras: ['interrogacao'] }, 900),
-    q({ olhos: 'abertos', boca: 'ondulada', extras: ['interrogacao'], olharX: 1, olharY: -1 }, 800),
-    q({ olhos: 'abertos', boca: 'ondulada' }, 300),
-    q({ olhos: 'abertos', boca: 'ondulada', extras: ['interrogacao'] }, 700),
-    q({ olhos: 'piscando', boca: 'ondulada', extras: ['interrogacao'] }, 130),
-  ],
-  // Procurando a posição: olha em volta enquanto os pontinhos carregam.
+  // Olhos arregalados e "!": pisca o ponto de exclamação.
+  alerta: [q(C.alerta, 500), q(C.alerta, 300, 0, -1)],
+  // Sem dado: o "?" balança. Nunca sorri (sem dado não é área tranquila).
+  confusa: [q(C.desconhecido, 900), q(C.desconhecido, 500, 0, -1), q(C.desconhecido, 700), q(C.desconhecido, 500, 1)],
+  // Respira bem devagar.
+  dormindo: [q(C.dormindo, 1500), q(C.dormindo, 1500, 0, 1)],
+  desconectado: [q(C.desconectado, 1200), q(C.desconectado, 1200, 0, 1)],
+  // Procurando a posição: olha em volta.
   procurando: [
-    q({ olhos: 'abertos', boca: 'pontos1', olharX: -1 }, 350),
-    q({ olhos: 'abertos', boca: 'pontos2', olharX: -1 }, 350),
-    q({ olhos: 'abertos', boca: 'pontos3', olharX: -1 }, 350),
-    q({ olhos: 'abertos', boca: 'pontos1', olharX: 1 }, 350),
-    q({ olhos: 'abertos', boca: 'pontos2', olharX: 1 }, 350),
-    q({ olhos: 'abertos', boca: 'pontos3', olharX: 1 }, 350),
-    q({ olhos: 'piscando', boca: 'pontos3' }, 130),
+    q(C.atenta, 450, -1),
+    q(C.atenta, 450, 1),
+    q(C.atenta, 450, -1),
+    q(C.atenta, 450, 1),
+    q(PISCANDO.atenta, 140),
   ],
-  // Enquanto a pessoa digita a senha: fecha os olhos para não olhar (só na tela de Entrar).
-  timida: [
-    q({ olhos: 'piscando', boca: 'sorriso' }, 1600),
-    q({ olhos: 'piscando', boca: 'sorriso', dy: -1 }, 500),
-  ],
+  // Enquanto a pessoa digita a senha: olhos fechados, só respira.
+  timida: [q(PISCANDO.tranquila, 1600), q(PISCANDO.tranquila, 500, 0, -1)],
 };

@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { AccessibilityInfo, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import {AccessibilityInfo, ScrollView, StyleSheet, View} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListaAlertas, SemAlertas } from '@/components/historico/lista-alertas';
@@ -8,6 +8,7 @@ import { Lock, Trash } from '@/components/icones';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
+import { perguntar } from '@/components/ui/perguntar';
 import { resumoDaSemana } from '@/features/historico/agrupar';
 import { apagarHistorico, listarAlertas } from '@/features/historico/historico-repo';
 import type { AlertaSalvo } from '@/features/historico/tipos';
@@ -39,7 +40,7 @@ export default function HistoricoScreen() {
 
   function confirmarApagar() {
     // Ações que apagam algo sempre pedem confirmação (design system v3, F10 CA3).
-    Alert.alert('Apagar histórico?', 'Todos os alertas guardados neste aparelho serão apagados.', [
+    perguntar('Apagar histórico?', 'Todos os alertas guardados neste aparelho serão apagados.', [
       { text: 'Agora não', style: 'cancel' },
       {
         text: 'Apagar',

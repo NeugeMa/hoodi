@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { gradeDemo } from '@/features/demo/dados-demo';
+import { MODO_DEMO } from '@/features/demo/modo-demo';
+
 import { baixarGrade, buscarManifesto, ErroDownload, type FalhaDownload } from './grade-api';
 import { lerGradeSalva, salvarGrade } from './grade-repo';
 import type { GradeSalva } from './tipos';
@@ -23,6 +26,8 @@ type Resultado = { grade: GradeSalva | null; falha: FalhaDownload | null };
  * 3. checksum inválido: recusa e continua com a versão anterior (F03 CA8).
  */
 async function sincronizar(): Promise<Resultado> {
+  // Modo demonstração: grade simulada em volta da FIAP Paulista (não é registro da SSP-SP).
+  if (MODO_DEMO) return { grade: gradeDemo(), falha: null };
   let grade: GradeSalva | null = null;
   try {
     grade = await lerGradeSalva();

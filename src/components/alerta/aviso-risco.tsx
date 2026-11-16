@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,9 +27,9 @@ export function AvisoRisco() {
   const Icone = alto ? Warning : WarningCircle;
 
   function verDesvio() {
-    // Comparar rotas (F04) ainda está em produção.
-    Alert.alert('Ver desvio', 'A comparação de rotas ainda está em produção (F04).');
+    // Abre o Comparar rotas (F04) para achar um caminho de menor risco registrado.
     dispensarAlerta();
+    router.push('/comparar-rotas');
   }
 
   return (

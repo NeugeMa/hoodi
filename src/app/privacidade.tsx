@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { AccessibilityInfo, Alert, StyleSheet, View } from 'react-native';
+import {AccessibilityInfo, StyleSheet, View} from 'react-native';
 
 import { ConfirmarSenha } from '@/components/conta/confirmar-senha';
 import { TelaConta } from '@/components/conta/tela-conta';
@@ -8,6 +8,7 @@ import { CheckCircle, CloudSlash, Database, ShieldCheck, Trash, WarningCircle } 
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
+import { perguntar } from '@/components/ui/perguntar';
 import { ehErroHttp, mensagemDeFalha } from '@/features/api/cliente';
 import { useConta } from '@/features/conta/conta-context';
 import { usePreferencias } from '@/features/preferencias/preferencias-context';
@@ -41,7 +42,7 @@ export default function PrivacidadeScreen() {
   const logado = estado === 'logado';
 
   function confirmarRevogar() {
-    Alert.alert(
+    perguntar(
       'Revogar o consentimento?',
       'Os alertas no celular, no relógio e no Hoodi Pet param, e você não consegue iniciar trajetos até dar o consentimento de novo. O mapa continua funcionando.',
       [

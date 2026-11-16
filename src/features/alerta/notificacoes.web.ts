@@ -6,3 +6,5 @@ export async function prepararNotificacoes() {
 }
 
 export async function notificarAlerta(_alerta: Alerta, _opcoes: { som?: boolean } = {}) {}
+
+export async function notificarAviso(_titulo: string, _texto: string) {}

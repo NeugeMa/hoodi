@@ -20,6 +20,22 @@ App mobile do **hoodi**, a CitizenTech da equipe na Global Solution 2026.2 da FI
 
 > Dados de risco: a grade com dados da SSP-SP ainda não está integrada. Até lá, as telas mostram os estados vazios (por exemplo, "Localizando você"), sem números inventados.
 
+## Prints das telas
+
+Tiradas no navegador, no modo demonstração (dados simulados), num tamanho de celular (390 × 844).
+
+| Início | Mapa | Comparar rotas | Em trajeto |
+|---|---|---|---|
+| ![Início](docs/prints/inicio.png) | ![Mapa](docs/prints/mapa.png) | ![Comparar rotas](docs/prints/comparar-rotas.png) | ![Início em trajeto](docs/prints/inicio-em-trajeto.png) |
+| **Mapa com o trajeto** | **Alerta de risco** | **Pedir ajuda** | **Pedido registrado** |
+| ![Mapa com trajeto](docs/prints/mapa-com-trajeto.png) | ![Alerta](docs/prints/alerta-risco-medio.png) | ![Pedir ajuda](docs/prints/pedir-ajuda.png) | ![Pedido registrado](docs/prints/pedido-registrado.png) |
+| **Entrar** | **Criar conta** | **Contatos** | **Perfil** |
+| ![Entrar](docs/prints/entrar.png) | ![Criar conta](docs/prints/criar-conta.png) | ![Contatos](docs/prints/contatos.png) | ![Perfil](docs/prints/perfil.png) |
+| **Permissões** | **Relógio** | **Dados e privacidade** | |
+| ![Permissões](docs/prints/permissoes.png) | ![Relógio](docs/prints/relogio.png) | ![Privacidade](docs/prints/privacidade.png) | |
+
+**Vídeo (até 3 min):** _link a adicionar_
+
 ## Como rodar
 
 Pré-requisitos: [Node.js](https://nodejs.org/) 20 ou mais novo e o app **Expo Go** no celular (Play Store ou App Store), compatível com o **SDK 58**.
@@ -31,7 +47,31 @@ npm start
 
 `npm start` abre no **Expo Go** (equivale a `npx expo start --go`). Leia o QR code com o Expo Go (Android) ou com a câmera (iPhone). O celular e o computador precisam estar na mesma rede Wi-Fi; se não conectar, use `npx expo start --tunnel`.
 
-Para ver no navegador: `npx expo start --web`. Os alertas de confirmação (`Alert`) não aparecem no navegador; para testar os fluxos completos, use o celular.
+Para ver no navegador: `npx expo start --web` (as confirmações viram a janela de confirmação do navegador). No navegador o app não alcança a API (ela não libera CORS) nem tem GPS e Bluetooth: para navegar pelas telas, use o **modo demonstração** (abaixo).
+
+### Modo demonstração no navegador (vídeo e prints)
+
+Para gravar o vídeo (por exemplo com o Claude Motion) ou tirar prints no **localhost**, o app tem um modo com **dados simulados**, sempre sinalizado na tela com o selo **"Demonstração · dados simulados"**.
+
+```bash
+npx expo start --web --port 8081
+```
+
+Depois abra **http://localhost:8081/?demo=1**. O modo fica ligado até abrir com `?demo=0`.
+
+| No modo demonstração | Como funciona |
+|---|---|
+| Conta | `demo@hoodi.dev` / `Teste@2026` (a tela Entrar tem o botão **Preencher**). Criar conta também funciona; o botão "Abrir o link do e-mail (demonstração)" faz o papel do e-mail |
+| API | Uma API simulada dentro do app responde no mesmo formato da API do Abner (contas, contatos, convites, pedido de ajuda, rotas, excluir conta). Tudo em memória: some ao recarregar a página |
+| Grade de risco | Grade simulada em volta da FIAP Paulista, com Área tranquila, Risco médio, Risco alto e Sem dado. **Não são registros da SSP-SP** |
+| Posição | Fica na FIAP Paulista. Ao **Iniciar trajeto**, "anda" sozinha pela rota escolhida (a rota inteira em ~1 min): aparecem o aviso antecipado, os alertas, a carinha mudando e o histórico |
+| Comparar rotas | Qualquer destino vira a Estação Liberdade (o exemplo do TC13): **Menor risco registrado** (evita 3 células de risco alto) x **Rota normal** |
+| Contatos | Ana (confirmada), um convite pendente e Bruno (de quem você é contato, com um pedido de ajuda recebido) |
+| Mapa | No navegador, a grade é desenhada em SVG (mapa esquemático, sem ruas); no celular aparece o mapa de verdade |
+
+Roteiro sugerido para o vídeo: Permissões → Configurar o relógio → Início → Mapa → Entrar (Preencher) → Comparar rotas → Iniciar trajeto → esperar o aviso e o alerta → Mapa com o trajeto → Histórico → Perfil → Contatos → Pedir ajuda. Para o tema escuro: Perfil > Aparência > Tema. **Navegue pelas abas e botões do app** (recarregar a página recomeça a demonstração e encerra o trajeto).
+
+Fora do modo demonstração nada disso existe: o app usa a API, o GPS e o Bluetooth de verdade.
 
 ### Comandos úteis
 
@@ -87,7 +127,8 @@ src/
 │   ├── ajuda/              # Pedido de ajuda: API do pânico, limite por hora, posição aproximada e push
 │   ├── grade/              # Grade de risco: download, checksum, banco local e geometria
 │   ├── historico/          # Histórico local de alertas (banco e agrupamento)
-│   ├── pet/                # Carinhas em pixel art e seus quadros
+│   ├── pet/                # Hoodi Pet: protocolo BLE v1, conexão e carinhas (carinhas.json do firmware)
+│   ├── demo/               # Modo demonstração: API, grade e caminhada simuladas (só com ?demo=1)
 │   ├── risco/              # Níveis de risco: nomes, ícones e cores
 │   └── trajeto/            # Estado do trajeto, posição e canais de aviso
 └── theme/                  # Tokens do design system e hook de tema
@@ -117,6 +158,10 @@ Regras visuais combinadas pela equipe (além do v3):
 - **Micro-interações com Lottie**, com animações aprovadas antes de entrar.
 - **Sem título no topo das telas:** a barra de navegação já diz onde você está; telas fora das abas têm só o botão de voltar.
 
+## Ícone e splash
+
+Vêm do design system v3 (página "Logo e ícone do app"): a Chapeuzinho sobre o papel (`#F5F4F1`). No Android, ícone adaptativo (logo na zona segura, fundo papel) e versão monocromática para o ícone temático; no tema escuro, a splash usa a logo com contorno sobre `#121215`. Arquivos em `assets/images/` (`icon.png`, `android-icon-*.png`, `splash-icon*.png`, `favicon.png`).
+
 ## Acessibilidade
 
 - Alvos de toque de pelo menos 48px; botões e barra de navegação com 56px.
@@ -136,7 +181,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 | F03 · Mapa reduzido offline | Mapa, Detalhe da célula | Mari | **Pronto, aguardando a grade da API** |
 | F04 · Comparar rotas | Comparar rotas | Mari | **Pronto** (rotas no mock da API) |
 | F05 · Trajeto em andamento | **Início** | Mari | **Layout pronto, aguardando dados** |
-| F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari | **Pronto** (Parear precisa de development build) |
+| F06 · Relógio e hoodi Pet | Configurar o relógio, Parear hoodi Pet, hoodi Pet conectado | Mari e Abner | **Pronto** (protocolo v1, reconexão no trajeto; precisa de development build) |
 | F07 · Alerta de risco | Alerta na tela, notificação, vibração do Pet (protocolo v1), reforço | Mari e Abner | **Pronto** (com o app aberto; segundo plano a fazer) |
 | F08 · Perfil e privacidade | Perfil, Dados e privacidade | Mari | **Pronto** (excluir conta espera a API) |
 | F09 · Contatos e pedido de ajuda | Contatos de segurança, Convite, Pedir ajuda, Pedido recebido | Mari | **Pronto, ligado à API** (o envio de push precisa estar ligado na VM) |
@@ -147,7 +192,7 @@ As features seguem o QA no Azure Boards (v2). A produção do mobile está divid
 Mesmo estilo do Mapa: em cima, o que está acontecendo; embaixo, um painel arredondado com os detalhes e o Pedir ajuda.
 
 - **Topo limpo:** sem título nem saudação; o Início começa pela telinha do Pet.
-- **Telinha do hoodi Pet:** a carinha em pixel art (17 × 12), igual à tela OLED do Pet, animada por quadros, com a moldura na cor do nível.
+- **Telinha do hoodi Pet:** a carinha em pixel art (18 × 12), **a mesma da tela OLED do Pet**: os desenhos vêm do `carinhas.json` gerado pelo firmware (`scripts/gerar_carinhas.py`). O app só anima (pisca com os quadros "piscando" do JSON, respira, olha em volta, treme), com a moldura na cor do nível.
 - **Canais de aviso (F05 CA2):** os indicadores **Relógio** e **hoodi Pet**, verdes quando conectados e cinza quando não (nunca vermelho). Sem Pet, o indicador mostra **Conectar** e abre o pareamento.
 - **Painel inferior:** "Onde você está agora" com o selo do nível, o bairro e o motivo (o mesmo bloco do Mapa); depois **Seu trajeto** em linhas de lista (tempo até o destino, alertas, próximo trecho de maior risco e **Encerrar**, com confirmação), ou o convite para **Comparar rotas**.
 - **Pedir ajuda:** fixo no rodapé do painel, sempre visível, com a quantidade de contatos confirmados.
@@ -160,7 +205,7 @@ Mesmo estilo do Mapa: em cima, o que está acontecendo; embaixo, um painel arred
 | Sem dado | confusa | boca ondulada e "?" (nunca sorri) |
 | Posição desconhecida | procurando | olha em volta com pontinhos carregando |
 
-Os desenhos ficam em [`src/features/pet/carinhas.ts`](src/features/pet/carinhas.ts) e a telinha em [`src/components/pet/tela-pet.tsx`](src/components/pet/tela-pet.tsx). Com "Reduzir movimento" ligado no celular, a carinha fica parada.
+Os desenhos ficam em [`src/features/pet/carinhas.json`](src/features/pet/carinhas.json) (cópia do firmware; mudou lá, copie para cá), as animações em [`src/features/pet/carinhas.ts`](src/features/pet/carinhas.ts) e a telinha em [`src/components/pet/tela-pet.tsx`](src/components/pet/tela-pet.tsx). Com "Reduzir movimento" ligado no celular, a carinha fica parada.
 
 #### Sem dados (estado atual)
 
@@ -334,7 +379,8 @@ O **Perfil** funciona com ou sem conta; sem conta, mostra o convite para **Entra
 - **Avisos:** Expo Go sem Bluetooth, permissão negada (**Permitir**), Bluetooth desligado (CA6), nenhum Pet encontrado com dicas e **Procurar de novo** (CA7), e sempre "Só este celular comanda o Pet" (CA9).
 - **hoodi Pet conectado** (`/pet/conectado`): estado da conexão, as três carinhas (tranquila, atenta, preocupada), **Testar vibração** (CA5) e **Desconectar** com confirmação.
 - **Início:** o indicador **hoodi Pet** fica verde quando conectado e mostra **Conectar** quando não há Pet; tocar abre o pareamento ou a tela do Pet.
-- O Pet pareado fica salvo na tabela `pet_pareado`; ao abrir o app, ele tenta reconectar sozinho. Se a conexão cair, o Início volta a mostrar o Pet desconectado (CA8).
+- O Pet pareado fica salvo na tabela `pet_pareado`; ao abrir o app, ele tenta reconectar sozinho.
+- **Se a conexão cair (CA8):** o Início mostra o Pet desconectado; **durante um trajeto**, o celular avisa por notificação (que o relógio espelha) "Hoodi Pet desconectado · Os alertas continuam no celular e no relógio". O app tenta reconectar sozinho (em 3, 6, 12 e 24 s e depois a cada 30 s) e, quando volta, reenvia a carinha do nível atual sem vibrar. Desconectar de propósito para as tentativas.
 
 **Bluetooth e Expo Go:** o Expo Go não tem o módulo de Bluetooth. Para testar o pareamento é preciso um **development build** (veja "Testar o Bluetooth" abaixo). No Expo Go e no navegador a tela mostra um aviso no lugar da busca.
 
@@ -365,11 +411,25 @@ Especificação completa no repositório da API: `iot/hoodi-pet/docs/PROTOCOLO_B
 
 **Reforço do alerta:** quando o Pet vibra por risco, o app espera o "vi" (um clique no botão do Pet). Sem clique em 20 s, o Pet vibra de novo e o celular também (uma vez). Fora dessa espera, o clique só acende a tela do Pet. **Pet desconectado na hora do alerta:** o celular vibra direto. **"Avisar no celular também"** (Perfil): o celular vibra junto com o Pet em todo alerta.
 
-#### Testar o Bluetooth (development build)
+#### Development build (Bluetooth e push)
 
-1. Crie uma conta gratuita em [expo.dev](https://expo.dev) e entre com `npx eas-cli@latest login`.
-2. Gere o app instalável de desenvolvimento para Android: `npx eas-cli@latest build --profile development --platform android` (na primeira vez, o EAS cria o `eas.json`). O build roda na nuvem e devolve um link para instalar o APK.
-3. Instale o APK no celular Android e rode `npm run start:dev`. O app instalado lê o QR code no lugar do Expo Go.
+O Expo Go não tem Bluetooth nem recebe push no Android; para o Pet e o pedido de ajuda por notificação é preciso o **development build**. O `eas.json` já está no projeto (perfis `development`, `preview` e `production`, com APK no Android).
+
+1. Crie uma conta gratuita em [expo.dev](https://expo.dev) e entre:
+   ```bash
+   npx eas-cli@latest login
+   ```
+2. Ligue o projeto ao EAS (uma vez). Isso grava o `extra.eas.projectId` no `app.json`, que o app usa para pedir o token de push:
+   ```bash
+   npx eas-cli@latest init
+   ```
+3. **Push no Android:** o Expo precisa da chave do Firebase (FCM V1). Crie um projeto no Firebase, gere a chave da conta de serviço e envie com `npx eas-cli@latest credentials` (Android > Push Notifications: FCM V1). Sem isso, o app funciona, mas o contato só vê o pedido em "Pedidos recebidos".
+4. Gere o APK de desenvolvimento (roda na nuvem e devolve um link para instalar):
+   ```bash
+   npx eas-cli@latest build --profile development --platform android
+   ```
+5. Instale o APK no celular Android e rode `npm run start:dev`. O app instalado lê o QR code no lugar do Expo Go e usa o `.env` do PC.
+6. **APK para a demonstração sem o PC** (perfil `preview`): o `.env` não vai para a nuvem (está no `.gitignore`), então cadastre o endereço da API no EAS antes do build, por exemplo `npx eas-cli@latest env:create --name EXPO_PUBLIC_API_URL --value http://IP-DA-VM --environment preview`, e rode `npx eas-cli@latest build --profile preview --platform android`.
 
 No iPhone, o development build exige conta paga da Apple; por isso, o teste de Bluetooth da equipe é no Android.
 
@@ -442,6 +502,6 @@ Tudo fica só no aparelho. Na pré-visualização web, que não tem SQLite, os r
 
 - **Início sem trajeto:** o design system não desenha esse estado. Hoje ele mostra o status atual, Pedir ajuda e Comparar rotas.
 - **Início fora do design system v3:** a régua deu lugar à telinha do Pet, e os cards agora têm borda de 1px e sombra sutil (o v3 pede cards sem borda e sem sombra). Falta levar ao design system.
-- **Ícone do app e splash:** ainda são os do template do Expo.
-- **Integrações:** GPS, grade de risco, API e Bluetooth com o hoodi Pet ainda não estão ligados; por isso o Início mostra só os estados vazios.
+- **Grade de risco real:** a API ainda não publica a grade v0.6 (H3, 5 faixas, níveis 0 a 3); até lá, o Mapa mostra "Dados de risco indisponíveis" (ou a grade simulada, no modo demonstração). Falta decidir o nome do nível 3.
+- **Trajeto com a tela bloqueada (F05 CA3):** o acompanhamento roda com o app aberto; o segundo plano precisa de `expo-task-manager` e do development build.
 - **"Localizando você":** estado novo para quando a posição ainda não é conhecida. Não existe no design system v3; falta validar com quem cuida do design.

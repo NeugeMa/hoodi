@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { AccessibilityInfo, Alert, Keyboard, StyleSheet, View } from 'react-native';
+import {AccessibilityInfo, Keyboard, StyleSheet, View} from 'react-native';
 
 import { TelaConta } from '@/components/conta/tela-conta';
 import { CloudSlash, GpsFix, MapPinLine, Question, WarningCircle } from '@/components/icones';
@@ -10,7 +10,10 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { CampoTexto } from '@/components/ui/campo-texto';
 import { Texto } from '@/components/ui/texto';
+import { perguntar } from '@/components/ui/perguntar';
 import { useAcompanhamento } from '@/features/alerta/acompanhamento-context';
+import { ESTACAO_LIBERDADE, FIAP_PAULISTA } from '@/features/demo/dados-demo';
+import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { ErroApi, mensagemDeFalha } from '@/features/api/cliente';
 import { useGrade } from '@/features/grade/grade-context';
 import { faixaAtual } from '@/features/grade/recorte';
@@ -30,6 +33,7 @@ type Estado =
   | { tipo: 'falha'; texto: string };
 
 async function posicaoAtual(): Promise<Coordenada | null> {
+  if (MODO_DEMO) return FIAP_PAULISTA; // demonstração: sempre saindo da FIAP Paulista
   try {
     const ultima = await Location.getLastKnownPositionAsync({ maxAge: 60_000 });
     const local = ultima ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
@@ -41,6 +45,8 @@ async function posicaoAtual(): Promise<Coordenada | null> {
 
 /** Endereço digitado → coordenada, pelo geocodificador do próprio celular (nada vai para o servidor do Hoodi). */
 async function acharDestino(texto: string): Promise<Coordenada | null> {
+  // Demonstração: qualquer destino vira a Estação Liberdade (o exemplo do TC13).
+  if (MODO_DEMO) return ESTACAO_LIBERDADE;
   try {
     const [achado] = await Location.geocodeAsync(`${texto}, São Paulo, SP`);
     return achado ? { latitude: achado.latitude, longitude: achado.longitude } : null;
@@ -118,7 +124,7 @@ export default function CompararRotasScreen() {
     };
     // Consentimento revogado: pede de novo antes de começar (F08 CA4 · TC38).
     if (!consentimentoEm) {
-      Alert.alert(
+      perguntar(
         'Dar o consentimento?',
         'Para acompanhar o trajeto e avisar no relógio e no Hoodi Pet, o Hoodi precisa do seu consentimento. Sua posição continua só no celular.',
         [
