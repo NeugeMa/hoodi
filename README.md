@@ -11,7 +11,7 @@
 
 O Hoodi avisa quem anda a pé à noite quando entra numa área de risco maior, **pelo relógio e pelo Hoodi Pet** (um bichinho de bolso que vibra e mostra uma carinha), para o celular continuar guardado. Este repositório é **o app mobile** da CitizenTech.
 
-**Sumário:** [Integrantes](#integrantes) · [Ficha](#ficha-da-citizentech) · [Vídeo](#vídeo) · [Prints](#prints) · [Funcionalidades](#funcionalidades) · [Como rodar](#como-rodar) · [Tecnologias](#tecnologias) · [Documentação](#documentação) · [Pendências](#pendências)
+**Sumário:** [Integrantes](#integrantes) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Vídeo](#vídeo) · [Prints](#prints) · [Funcionalidades](#funcionalidades) · [Como rodar](#como-rodar) · [Tecnologias](#tecnologias) · [Documentação](#documentação) · [Pendências](#pendências)
 
 ## Integrantes
 
@@ -33,8 +33,17 @@ O Hoodi avisa quem anda a pé à noite quando entra numa área de risco maior, *
 | **Como funciona** | O app guarda no celular a grade de risco feita com dados da SSP-SP, cruza a posição com a célula e o horário e, quando o risco sobe, avisa pelo relógio (notificação) e pelo Hoodi Pet (vibração e carinha). Também compara rotas pelo menor risco registrado e avisa contatos de confiança no Pedir ajuda |
 | **O que cada parte faz** | **App (este repositório):** a interface do cidadão · **API .NET:** contas, contatos, pedido de ajuda e rotas · **ML:** a grade de risco · **Hoodi Pet (ESP32):** o alerta no bolso · **Infra Linux:** hospeda a API |
 | **Repositório** | https://github.com/NeugeMa/hoodi |
-| **Indicador de impacto** | _A definir pela equipe_ |
-| **ODS conectados** | _A definir pela equipe_ |
+| **Indicador de impacto** | **% de trajetos feitos pela rota de menor risco registrado** (medido pelo app, no Comparar rotas) e **sensação de segurança antes e depois** (pesquisa de 1 a 5 com estudantes do noturno da FIAP Paulista) |
+| **ODS conectados** | **11** (meta 11.7), **16** (16.1), **5** (5.2) e **4** (4.a): veja [ODS](#ods) |
+
+## ODS
+
+| ODS | Meta | Como o Hoodi contribui |
+|---|---|---|
+| **11 · Cidades e comunidades sustentáveis** (principal) | 11.7: espaços públicos seguros e inclusivos | Ajuda quem anda a pé até o metrô a escolher caminhos com menor risco registrado e avisa no trajeto, pelo relógio e pelo Hoodi Pet |
+| **16 · Paz, justiça e instituições eficazes** | 16.1: reduzir todas as formas de violência | Usa dados públicos da SSP-SP para prevenção: evitar áreas com mais ocorrências e avisar contatos de confiança no Pedir ajuda |
+| **5 · Igualdade de gênero** | 5.2: eliminar a violência contra mulheres e meninas nos espaços públicos | Quem mais teme andar sozinha à noite são as mulheres; o alerta discreto e o pedido de ajuda respondem a esse medo |
+| **4 · Educação de qualidade** | 4.a: ambientes de aprendizagem seguros | O cidadão é o estudante do noturno: o trajeto até a faculdade faz parte de estudar com segurança |
 
 ## Vídeo
 
