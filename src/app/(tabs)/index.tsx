@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+
 import {AccessibilityInfo, Linking, Platform, ScrollView, StyleSheet, View} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,8 +13,8 @@ import { Aviso } from '@/components/ui/aviso';
 import { Texto } from '@/components/ui/texto';
 import { perguntar } from '@/components/ui/perguntar';
 import { useAcompanhamento } from '@/features/alerta/acompanhamento-context';
+import { useConta } from '@/features/conta/conta-context';
 import { usePet } from '@/features/pet/pet-context';
-import { lerPreferencia, PREF } from '@/features/preferencias/preferencias-repo';
 import { explicacaoDaPosicao } from '@/features/trajeto/textos';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio, sombra } from '@/theme/tokens';
@@ -39,22 +39,9 @@ export default function InicioScreen() {
   const { posicao, trajeto, canais, contatosConfirmados, encerrarTrajeto } = useTrajeto();
   const petPareado = !!usePet().pareado;
   const { permissao, pedirLocalizacao } = useAcompanhamento();
+  // Sem conta, o Pet fica dormindo: ainda não está cuidando de ninguém.
+  const semConta = useConta().estado !== 'logado';
 
-  // Primeiro acesso: Permissões (F02) e, logo depois, a orientação do relógio (F06 CA1 · TC35).
-  // Cada uma aparece uma vez só e pode ser reaberta no Perfil.
-  useEffect(() => {
-    let ativo = true;
-    Promise.all([lerPreferencia(PREF.permissoesVistas), lerPreferencia(PREF.relogioOrientacaoVista)]).then(
-      ([permissoes, relogio]) => {
-        if (!ativo) return;
-        if (!permissoes) router.push('/permissoes');
-        else if (!relogio) router.push('/relogio');
-      },
-    );
-    return () => {
-      ativo = false;
-    };
-  }, []);
   // Sem posição ou fora da área coberta: nenhum nível (carinha "procurando").
   const nivel = posicao?.celulaId ? posicao.nivel : null;
 
@@ -86,6 +73,7 @@ export default function InicioScreen() {
           canais={canais}
           onConectarPet={() => router.push(petPareado ? '/pet/conectado' : '/pet/parear')}
           onConfigurarRelogio={() => router.push('/relogio')}
+          dormindo={semConta}
         />
       </View>
 

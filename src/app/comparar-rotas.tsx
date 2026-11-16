@@ -19,7 +19,7 @@ import { useGrade } from '@/features/grade/grade-context';
 import { faixaAtual } from '@/features/grade/recorte';
 import type { Coordenada } from '@/features/grade/tipos';
 import { usePreferencias } from '@/features/preferencias/preferencias-context';
-import { compararRotas, type Comparacao, type RotaVista } from '@/features/rotas/comparar';
+import { COBERTURA_MINIMA, compararRotas, type Comparacao, type RotaVista } from '@/features/rotas/comparar';
 import { avaliarRotas } from '@/features/rotas/rotas-api';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio } from '@/theme/tokens';
@@ -224,6 +224,7 @@ export default function CompararRotasScreen() {
             titulo="Rota normal e de menor risco registrado"
             minutos={resultado.normal.minutos}
             metros={resultado.normal.metros}
+              semDadoPct={resultado.normal.semDadoPct}
             frase={resultado.frase}
             menorRisco
             selecionada={escolhida?.id === resultado.normal.id}
@@ -235,6 +236,7 @@ export default function CompararRotasScreen() {
               titulo="Menor risco registrado"
               minutos={resultado.menorRisco.minutos}
               metros={resultado.menorRisco.metros}
+              semDadoPct={resultado.menorRisco.semDadoPct}
               frase={`${resultado.frase} ${
                 resultado.diferencaMin > 0 ? `São ${resultado.diferencaMin} min a mais.` : 'Leva o mesmo tempo.'
               }`}
@@ -246,6 +248,7 @@ export default function CompararRotasScreen() {
               titulo="Rota normal"
               minutos={resultado.normal.minutos}
               metros={resultado.normal.metros}
+              semDadoPct={resultado.normal.semDadoPct}
               frase="O caminho mais rápido."
               selecionada={escolhida?.id === resultado.normal.id}
               aoEscolher={() => setEscolhida(resultado.normal)}
@@ -259,7 +262,7 @@ export default function CompararRotasScreen() {
           <Aviso
             icone={Question}
             titulo="Não dá para comparar"
-            texto="Há trecho sem dado no caminho. Sem dado não quer dizer área tranquila, então o Hoodi não indica qual rota tem menor risco."
+            texto={`Uma das rotas tem mais de ${100 - COBERTURA_MINIMA}% do caminho sem dado. Sem dado não quer dizer área tranquila, então o Hoodi não indica qual rota tem menor risco.`}
           />
           {resultado.rotas.map((r, i) => (
             <CartaoRota
@@ -267,6 +270,7 @@ export default function CompararRotasScreen() {
               titulo={`Rota ${i + 1}`}
               minutos={r.minutos}
               metros={r.metros}
+              semDadoPct={r.semDadoPct}
               selecionada={escolhida?.id === r.id}
               aoEscolher={() => setEscolhida(r)}
             />
@@ -281,6 +285,7 @@ export default function CompararRotasScreen() {
             titulo="Rota"
             minutos={resultado.rota.minutos}
             metros={resultado.rota.metros}
+              semDadoPct={resultado.rota.semDadoPct}
             selecionada={escolhida?.id === resultado.rota.id}
             aoEscolher={() => setEscolhida(resultado.rota)}
           />

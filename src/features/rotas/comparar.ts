@@ -7,16 +7,23 @@ import type { ResultadoRotas, RotaAvaliada } from './rotas-api';
 /**
  * Regras da comparação (F04, QA v2), em lógica pura:
  * - CA1: rota normal (a mais rápida) x rota de menor risco registrado, diferença em minutos e uma frase.
- * - CA2: se QUALQUER trecho de qualquer rota não tem dado, o app diz que não sabe comparar e
- *   nunca chama uma rota de "menor risco" (mais rígido que a regra de 70% da API).
+ * - CA2 (decisão da equipe, 16/11, igual ao contrato da API): compara quando TODAS as rotas têm
+ *   pelo menos 70% do caminho com dado. Abaixo disso, o app diz que não sabe comparar e nunca chama
+ *   uma rota de "menor risco". Acima, cada cartão mostra quanto do caminho está sem dado
+ *   ("10% do caminho sem dado"): sem dado nunca é apresentado como área tranquila.
  * - CA3: nada de "rota segura". CA4: destino fora da área não compara.
  */
+
+/** Cobertura mínima para comparar (a mesma do contrato da API, coberturaMinimaPercentual). */
+export const COBERTURA_MINIMA = 70;
 
 export type RotaVista = {
   id: string;
   minutos: number;
   metros: number;
   caminho: Coordenada[];
+  /** Parte do caminho (%) sem dado de risco; o cartão mostra quando for maior que zero. */
+  semDadoPct: number;
 };
 
 export type Comparacao =
@@ -42,7 +49,13 @@ function vista(r: RotaAvaliada): RotaVista {
   } catch {
     // Geometria inválida: a rota segue sem desenho.
   }
-  return { id: r.rotaId, minutos: Math.max(1, Math.round(r.duracaoSegundos / 60)), metros: r.distanciaMetros, caminho };
+  return {
+    id: r.rotaId,
+    minutos: Math.max(1, Math.round(r.duracaoSegundos / 60)),
+    metros: r.distanciaMetros,
+    caminho,
+    semDadoPct: Math.round(r.percentualSemEstimativa),
+  };
 }
 
 /** Pontos do caminho mais os pontos do meio de cada trecho, para não pular células pequenas. */
@@ -60,19 +73,22 @@ function amostras(caminho: Coordenada[]) {
 export function celulasDoCaminho(grade: GradeRisco, faixa: FaixaHoraria | null, caminho: Coordenada[]) {
   const alto = new Set<string>();
   const medio = new Set<string>();
-  let semDado = false;
-  for (const p of amostras(caminho)) {
+  const pontos = amostras(caminho);
+  let semDado = 0;
+  for (const p of pontos) {
     const celula = celulaEm(grade, p);
     if (!celula) {
-      semDado = true;
+      semDado++;
       continue;
     }
     const nivel = nivelNaFaixa(celula, faixa);
-    if (nivel === 'sem-dado') semDado = true;
+    if (nivel === 'sem-dado') semDado++;
     else if (nivel === 'alto') alto.add(celula.id);
     else if (nivel === 'medio') medio.add(celula.id);
   }
-  return { alto: alto.size, medio: medio.size, semDado };
+  // Parte do caminho sem dado (aproximada pelos pontos amostrados), em %.
+  const semDadoPct = pontos.length ? Math.round((semDado / pontos.length) * 100) : 0;
+  return { alto: alto.size, medio: medio.size, semDadoPct };
 }
 
 function plural(n: number, um: string, varios: string) {
@@ -90,13 +106,16 @@ export function compararRotas(
 
   const rotas = resultado.rotas.map((r) => ({ api: r, vista: vista(r) }));
   const doGrade = grade ? rotas.map((r) => celulasDoCaminho(grade, faixa, r.vista.caminho)) : null;
+  // A parte sem dado de cada rota: a maior entre a da API e a da grade salva no aparelho.
+  rotas.forEach((r, i) => {
+    r.vista.semDadoPct = Math.max(r.vista.semDadoPct, doGrade?.[i].semDadoPct ?? 0);
+  });
 
-  // CA2: qualquer trecho sem dado (pela API ou pela grade do aparelho) impede a comparação.
-  const temTrechoSemDado =
+  // CA2: alguma rota com menos de 70% do caminho com dado impede a comparação.
+  const coberturaInsuficiente =
     resultado.motivo === 'cobertura_insuficiente' ||
-    rotas.some((r) => r.api.percentualSemEstimativa > 0 || r.api.exposicaoRelativa === null) ||
-    (doGrade?.some((g) => g.semDado) ?? false);
-  if (temTrechoSemDado) return { tipo: 'sem-dado', rotas: rotas.map((r) => r.vista) };
+    rotas.some((r) => r.api.exposicaoRelativa === null || r.vista.semDadoPct > 100 - COBERTURA_MINIMA);
+  if (coberturaInsuficiente) return { tipo: 'sem-dado', rotas: rotas.map((r) => r.vista) };
 
   if (rotas.length === 1) return { tipo: 'uma-rota', rota: rotas[0].vista };
 

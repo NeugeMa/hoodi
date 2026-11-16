@@ -15,21 +15,23 @@ type Props = {
   onConectarPet: () => void;
   /** Abre a orientação do relógio (F06) quando ele ainda não foi configurado. */
   onConfigurarRelogio: () => void;
+  /** Sem conta: o Pet fica dormindo (ainda não está cuidando de ninguém). */
+  dormindo?: boolean;
 };
 
 /**
  * Parte de cima do Início: a telinha do hoodi Pet e os canais de aviso (F05 CA2).
  * Sem título nem saudação; o bairro fica no painel de baixo ("Onde você está agora").
  */
-export function HeroiInicio({ nivel, canais, onConectarPet, onConfigurarRelogio }: Props) {
+export function HeroiInicio({ nivel, canais, onConectarPet, onConfigurarRelogio, dormindo = false }: Props) {
   const { cores } = useTema();
-  const semCor = nivel === null || nivel === 'sem-dado';
-  const corMoldura = semCor ? cores.grafiteApagado : cores[NIVEL[nivel].cor];
+  const semCor = dormindo || nivel === null || nivel === 'sem-dado';
+  const corMoldura = semCor || !nivel ? cores.grafiteApagado : cores[NIVEL[nivel].cor];
 
   return (
     <View style={styles.heroi}>
       <View style={styles.pet}>
-        <TelaPet carinha={carinhaDoNivel(nivel)} corMoldura={corMoldura} />
+        <TelaPet carinha={dormindo ? 'dormindo' : carinhaDoNivel(nivel)} corMoldura={corMoldura} />
       </View>
 
       <View style={styles.canais}>

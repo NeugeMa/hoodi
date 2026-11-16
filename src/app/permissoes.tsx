@@ -15,13 +15,13 @@ import {
   pedirNotificacoes,
   type EstadoPermissao,
 } from '@/features/permissoes/permissoes';
-import { lerPreferencia, PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
+import { PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 
 const NO_NAVEGADOR = Platform.OS === 'web';
 
 /**
  * Permissões (F02 CA2, CA3, CA4): antes de cada pedido do sistema, o motivo daquela permissão.
- * Aparece uma vez no primeiro acesso (antes da orientação do relógio) e pode ser reaberta no Perfil.
+ * Abre pelo Perfil (Permissões do celular); o app não abre nela sozinho ao iniciar.
  * Negar não trava o app: a tela diz o que deixa de funcionar e qual canal para de avisar.
  */
 export default function PermissoesScreen() {
@@ -53,10 +53,7 @@ export default function PermissoesScreen() {
 
   async function continuar() {
     await salvarPreferencia(PREF.permissoesVistas, '1');
-    // Primeiro acesso: depois das permissões vem a orientação do relógio (F06 CA1 · TC35).
-    const relogioVisto = await lerPreferencia(PREF.relogioOrientacaoVista);
-    if (!relogioVisto) router.replace('/relogio');
-    else if (router.canGoBack()) router.back();
+    if (router.canGoBack()) router.back();
     else router.replace('/');
   }
 

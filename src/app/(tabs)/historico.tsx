@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {AccessibilityInfo, ScrollView, StyleSheet, View} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
 import { perguntar } from '@/components/ui/perguntar';
 import { resumoDaSemana } from '@/features/historico/agrupar';
+import { ouvirHistorico } from '@/features/historico/historico-eventos';
 import { apagarHistorico, listarAlertas } from '@/features/historico/historico-repo';
 import type { AlertaSalvo } from '@/features/historico/tipos';
 import { NIVEL } from '@/features/risco/nivel';
@@ -36,6 +37,15 @@ export default function HistoricoScreen() {
         ativo = false;
       };
     }, []),
+  );
+
+  // Alerta novo com a aba aberta (ex.: durante o trajeto): atualiza na hora.
+  useEffect(
+    () =>
+      ouvirHistorico(() => {
+        listarAlertas().then(setAlertas);
+      }),
+    [],
   );
 
   function confirmarApagar() {
