@@ -4,6 +4,9 @@
  * Erros seguem o problem+json da API: { title, status, code, traceId }.
  */
 
+import { responderDemo } from '@/features/demo/api-demo';
+import { MODO_DEMO } from '@/features/demo/modo-demo';
+
 export const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 
 /**
@@ -52,6 +55,13 @@ export async function chamarApi<T>(
   caminho: string,
   { metodo = 'GET', corpo, token, base = API_URL }: OpcoesChamada = {},
 ): Promise<T> {
+  // Modo demonstração: a API simulada responde dentro do app (dados de exemplo, nada sai do aparelho).
+  if (MODO_DEMO) {
+    await new Promise((r) => setTimeout(r, 350));
+    const r = responderDemo(metodo, caminho, corpo, token);
+    if (r.status >= 400) throw new ErroApi('http', r.status, (r.corpo as { code?: string } | undefined)?.code);
+    return r.corpo as T;
+  }
   if (!base) throw new ErroApi('sem-servidor');
 
   const controle = new AbortController();

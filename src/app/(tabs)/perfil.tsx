@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import {ScrollView, StyleSheet, View} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -21,6 +21,7 @@ import { GrupoLista, ItemLista } from '@/components/ui/item-lista';
 import { LinkTexto } from '@/components/ui/link-texto';
 import { Seletor } from '@/components/ui/seletor';
 import { Texto } from '@/components/ui/texto';
+import { perguntar } from '@/components/ui/perguntar';
 import { useConta } from '@/features/conta/conta-context';
 import { useContatos } from '@/features/contatos/contatos-context';
 import { usePet } from '@/features/pet/pet-context';
@@ -54,7 +55,7 @@ export default function PerfilScreen() {
 
   function confirmarSair() {
     // Ações que desligam algo sempre pedem confirmação (design system v3).
-    Alert.alert('Sair da conta?', 'Você volta para a tela de entrar. O histórico continua neste celular.', [
+    perguntar('Sair da conta?', 'Você volta para a tela de entrar. O histórico continua neste celular.', [
       { text: 'Agora não', style: 'cancel' },
       {
         text: 'Sair',

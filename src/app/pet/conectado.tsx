@@ -1,5 +1,5 @@
 import { Redirect, router } from 'expo-router';
-import { AccessibilityInfo, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import {AccessibilityInfo, ScrollView, StyleSheet, View} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bluetooth, BluetoothSlash, Vibrate, WarningCircle } from '@/components/icones';
@@ -10,6 +10,7 @@ import { BlocoIcone } from '@/components/ui/bloco-icone';
 import { Botao } from '@/components/ui/botao';
 import { Cartao } from '@/components/ui/cartao';
 import { Texto } from '@/components/ui/texto';
+import { perguntar } from '@/components/ui/perguntar';
 import type { Carinha } from '@/features/pet/carinhas';
 import { usePet } from '@/features/pet/pet-context';
 import { NIVEL } from '@/features/risco/nivel';
@@ -35,7 +36,7 @@ export default function PetScreen() {
 
   function confirmarDesconectar() {
     // Ações que desligam algo sempre pedem confirmação (design system v3).
-    Alert.alert(
+    perguntar(
       'Desconectar o Hoodi Pet?',
       'Ele deixa de receber os avisos. Para usar de novo, será preciso parear outra vez.',
       [

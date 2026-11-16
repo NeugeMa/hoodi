@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { notificarAviso } from '@/features/alerta/notificacoes';
 import type { NivelRisco } from '@/features/risco/nivel';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 
@@ -63,7 +64,7 @@ const Contexto = createContext<PetContexto | null>(null);
  * Mantém o Início em dia pelos canais de aviso (atualizarCanais).
  */
 export function PetProvider({ children }: { children: ReactNode }) {
-  const { atualizarCanais } = useTrajeto();
+  const { atualizarCanais, trajeto } = useTrajeto();
   const [bluetooth, setBluetooth] = useState<EstadoBluetooth>('desconhecido');
   const [pareado, setPareado] = useState<PetPareado | null>(null);
   const [conectado, setConectado] = useState(false);
@@ -83,10 +84,20 @@ export function PetProvider({ children }: { children: ReactNode }) {
   const sequenciaRef = useRef(new Sequencia());
   /** Último nível mostrado, para voltar a ele depois do Testar vibração. */
   const ultimoNivelRef = useRef<NivelRisco | null>(null);
+  /** Pet que o app quer manter conectado (nulo depois de Desconectar). */
+  const petAtivoRef = useRef<PetPareado | null>(null);
+  /** Próxima tentativa de reconexão (F06 CA8). */
+  const reconexaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconectarRef = useRef<(pet: PetPareado, tentativa: number) => void>(() => {});
+  const emTrajetoRef = useRef(false);
+  useEffect(() => {
+    emTrajetoRef.current = !!trajeto;
+  }, [trajeto]);
 
   /** Atualiza o estado local e os canais do Início juntos. */
   const marcar = useCallback(
     (estaConectado: boolean, pet: PetPareado | null) => {
+      petAtivoRef.current = pet;
       setConectado(estaConectado);
       setPareado(pet);
       atualizarCanais({ pet: estaConectado, petPareado: !!pet });
@@ -107,10 +118,55 @@ export function PetProvider({ children }: { children: ReactNode }) {
         pararEventosRef.current?.();
         pararEventosRef.current = null;
         marcar(false, pet);
+        // F06 CA8: no meio de um trajeto, avisa no celular (e no relógio) que o Pet caiu.
+        // Os alertas continuam na tela, na notificação e no relógio enquanto o app tenta reconectar.
+        if (emTrajetoRef.current) {
+          notificarAviso(
+            'Hoodi Pet desconectado',
+            'Os alertas continuam no celular e no relógio. Tentando reconectar o Pet.',
+          ).catch(() => {});
+        }
+        reconectarRef.current(pet, 0);
       });
     },
     [marcar],
   );
+
+  /**
+   * Reconexão automática (F06 CA8): tenta de novo em 3 s, 6 s, 12 s, 24 s e depois a cada 30 s,
+   * enquanto o Pet continuar pareado. Ao voltar, reenvia o último nível SEM vibrar (protocolo v1).
+   */
+  useEffect(() => {
+    reconectarRef.current = (pet, tentativa) => {
+      if (reconexaoRef.current) clearTimeout(reconexaoRef.current);
+      if (SUPORTE !== 'ok') return;
+      const espera = Math.min(30_000, 3_000 * 2 ** tentativa);
+      reconexaoRef.current = setTimeout(async () => {
+        reconexaoRef.current = null;
+        if (petAtivoRef.current?.dispositivoId !== pet.dispositivoId) return; // desconectado de propósito
+        try {
+          await conectar(pet.dispositivoId);
+          await garantirPareamento(pet.dispositivoId);
+          marcar(true, pet);
+          vigiar(pet);
+          const nivel = ultimoNivelRef.current;
+          if (nivel) {
+            const seq = sequenciaRef.current.proxima();
+            const quadro =
+              nivel === 'sem-dado'
+                ? montarEstado(seq, null, PADRAO.nenhum, EXPRESSAO.semDado)
+                : montarEstado(seq, NIVEL_PET[nivel].nivel, PADRAO.nenhum, NIVEL_PET[nivel].expressao);
+            await enviarComando(pet.dispositivoId, quadro).catch(() => {});
+          }
+        } catch {
+          reconectarRef.current(pet, tentativa + 1);
+        }
+      }, espera);
+    };
+    return () => {
+      if (reconexaoRef.current) clearTimeout(reconexaoRef.current);
+    };
+  }, [marcar, vigiar]);
 
   // Ao abrir o app: lembra do Pet pareado e tenta reconectar.
   useEffect(() => {
@@ -271,6 +327,9 @@ export function PetProvider({ children }: { children: ReactNode }) {
    * quando alguém segura o botão enquanto liga. Aqui o app esquece o Pet do lado dele.
    */
   const esquecer = useCallback(async () => {
+    petAtivoRef.current = null;
+    if (reconexaoRef.current) clearTimeout(reconexaoRef.current);
+    reconexaoRef.current = null;
     if (pareado) {
       pararObservarRef.current?.();
       pararEventosRef.current?.();

@@ -12,6 +12,8 @@ import { Texto } from '@/components/ui/texto';
 import { ehErroHttp, mensagemDeFalha } from '@/features/api/cliente';
 import { carinhaDaConta } from '@/features/conta/carinha-conta';
 import { useConta } from '@/features/conta/conta-context';
+import { CONTA_DEMO } from '@/features/demo/api-demo';
+import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { emailValido } from '@/features/conta/tipos';
 import { lerPreferencia, PREF } from '@/features/preferencias/preferencias-repo';
 import { espaco } from '@/theme/tokens';
@@ -86,6 +88,20 @@ export default function EntrarScreen() {
         </>
       }>
       {avisoInicial ? <Aviso icone={CheckCircle} tom="sucesso" {...avisoInicial} /> : null}
+      {MODO_DEMO ? (
+        <Aviso
+          icone={CheckCircle}
+          titulo="Conta de demonstração"
+          texto={`E-mail ${CONTA_DEMO.email} e senha ${CONTA_DEMO.senha}. Os dados são simulados.`}
+          acao={{
+            rotulo: 'Preencher',
+            onPress: () => {
+              setEmail(CONTA_DEMO.email);
+              setSenha(CONTA_DEMO.senha);
+            },
+          }}
+        />
+      ) : null}
       <CampoTexto
         rotulo="E-mail"
         tipo="email"

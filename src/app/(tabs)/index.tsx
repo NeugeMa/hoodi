@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { AccessibilityInfo, Alert, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import {AccessibilityInfo, Linking, Platform, ScrollView, StyleSheet, View} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BotaoPedirAjuda } from '@/components/inicio/botao-pedir-ajuda';
@@ -11,6 +11,7 @@ import { MapPin } from '@/components/icones';
 import { OndeEstou } from '@/components/risco/onde-estou';
 import { Aviso } from '@/components/ui/aviso';
 import { Texto } from '@/components/ui/texto';
+import { perguntar } from '@/components/ui/perguntar';
 import { useAcompanhamento } from '@/features/alerta/acompanhamento-context';
 import { usePet } from '@/features/pet/pet-context';
 import { lerPreferencia, PREF } from '@/features/preferencias/preferencias-repo';
@@ -60,7 +61,7 @@ export default function InicioScreen() {
 
   function confirmarEncerrar() {
     // Ações que desligam algo sempre pedem confirmação (design system v3).
-    Alert.alert(
+    perguntar(
       'Encerrar trajeto?',
       'O relógio e o Hoodi Pet deixam de receber alertas deste trajeto.',
       [

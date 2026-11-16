@@ -10,6 +10,7 @@ import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
 import { mensagemDeFalha } from '@/features/api/cliente';
 import { registrar } from '@/features/conta/auth-api';
+import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { lerPreferencia, PREF } from '@/features/preferencias/preferencias-repo';
 import { espaco, raio } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
@@ -78,7 +79,16 @@ export default function VerificarEmailScreen() {
       ) : null}
       {falha ? <Aviso icone={CloudSlash} tom="atencao" titulo="O link não foi pedido" texto={falha} /> : null}
 
-      <ColarLink aoContinuar={(token) => router.push({ pathname: '/confirmar', params: { token } })} />
+      {MODO_DEMO ? (
+        // Demonstração: não há e-mail de verdade; o botão faz o papel do link.
+        <Botao
+          rotulo="Abrir o link do e-mail (demonstração)"
+          variante="secundario"
+          onPress={() => router.push({ pathname: '/confirmar', params: { token: 'demonstracao'.padEnd(40, '0') } })}
+        />
+      ) : (
+        <ColarLink aoContinuar={(token) => router.push({ pathname: '/confirmar', params: { token } })} />
+      )}
     </TelaConta>
   );
 }

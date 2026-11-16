@@ -2,8 +2,11 @@ import * as Location from 'expo-location';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Vibration } from 'react-native';
 
+import { FIAP_PAULISTA, pontoNoCaminho } from '@/features/demo/dados-demo';
+import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { useGrade } from '@/features/grade/grade-context';
 import { faixaAtual } from '@/features/grade/recorte';
+import type { Coordenada } from '@/features/grade/tipos';
 import { registrarAlerta } from '@/features/historico/historico-repo';
 import { usePet } from '@/features/pet/pet-context';
 import { horarioPermite } from '@/features/preferencias/alertas';
@@ -42,6 +45,9 @@ const TEMPO_ALERTA_MEDIO_MS = 10_000;
 const TEMPO_CONFIRMACAO_MS = 20_000;
 /** Mesmo padrão do canal de notificação do alerta. */
 const VIBRACAO_CELULAR = [0, 400, 200, 400];
+/** Modo demonstração: a caminhada simulada anda isto a cada passo (1,5 s): a rota inteira em ~1 min de vídeo. */
+const PASSO_DEMO_M = 40;
+const INTERVALO_DEMO_MS = 1_500;
 
 const Contexto = createContext<AcompanhamentoContexto | null>(null);
 
@@ -64,7 +70,8 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
   const { trajeto, atualizarPosicao, ajustarTrajeto } = useTrajeto();
   const { enviarNivel, fimTrajeto, aoEvento, conectado: petConectado } = usePet();
   const { alertas: preferencias, consentimentoEm } = usePreferencias();
-  const [permissao, setPermissao] = useState<PermissaoLocalizacao>('desconhecida');
+  // Modo demonstração: posição simulada, sem pedir o GPS.
+  const [permissao, setPermissao] = useState<PermissaoLocalizacao>(MODO_DEMO ? 'concedida' : 'desconhecida');
   const [alertaAtivo, setAlertaAtivo] = useState<Alerta | null>(null);
 
   // Valores mais recentes para o callback do GPS, sem reiniciar o acompanhamento a cada mudança.
@@ -141,6 +148,7 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
 
   // Permissão já dada antes? (não pede sozinho: quem pede é a tela, depois de explicar).
   useEffect(() => {
+    if (MODO_DEMO) return;
     let ativo = true;
     Location.getForegroundPermissionsAsync()
       .then((r) => {
@@ -153,6 +161,10 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const pedirLocalizacao = useCallback(async () => {
+    if (MODO_DEMO) {
+      setPermissao('concedida');
+      return;
+    }
     const r = await Location.requestForegroundPermissionsAsync();
     setPermissao(r.granted ? 'concedida' : 'negada');
     if (r.granted) prepararNotificacoes();
@@ -200,46 +212,74 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
     let assinatura: Location.LocationSubscription | null = null;
     let ativo = true;
 
+    /** Uma posição nova: célula, nível, Início, próximo trecho e, se for o caso, o alerta. */
+    const tratar = (coordenada: Coordenada) => {
+      const g = gradeRef.current;
+      if (!g) return; // Sem grade salva: o Mapa já avisa que os dados estão indisponíveis.
+      const faixa = faixaAtual(g.faixas);
+      const t = trajetoRef.current;
+      const r = processarPosicao(g, faixa, coordenada, motorRef.current, Date.now(), !!t);
+      motorRef.current = r.estado;
+
+      atualizarPosicao({
+        nivel: r.nivel ?? 'sem-dado',
+        local: r.celula?.referencia ?? '',
+        motivo: r.nivel ? motivoDoNivel(r.nivel, faixa) : '',
+        coordenada,
+        celulaId: r.celula?.id ?? null,
+      });
+
+      let antecipado: Alerta | null = null;
+      if (t) {
+        const proximo = proximoTrechoDeRisco(g, faixa, t.caminho, coordenada);
+        ajustarTrajeto(() => ({ proximoTrecho: proximo }));
+        // Antecedência do Perfil (F08 CA1): avisa antes de chegar ao próximo trecho de maior risco.
+        antecipado = avaliarAvisoAntecipado(proximo, r.nivel, preferenciasRef.current.antecedencia, avisadosRef.current);
+      }
+
+      if (r.alerta) disparar(r.alerta);
+      else {
+        if (antecipado) disparar(antecipado);
+        // Saiu da área de Risco alto: o alerta alto pode sair da tela (CA6). O antecipado tem o próprio tempo.
+        if (r.nivel !== 'alto') setAlertaAtivo((a) => (a?.nivel === 'alto' && !a.antecipado ? null : a));
+        // Durante o trajeto, a carinha do Pet acompanha o nível mesmo sem alerta (sem vibrar).
+        const nivelAgora = r.nivel ?? 'sem-dado';
+        if (t && nivelAgora !== nivelNoPetRef.current) {
+          nivelNoPetRef.current = nivelAgora;
+          enviarNivelRef.current(nivelAgora, { vibrar: false }).catch(() => {});
+        }
+      }
+    };
+
+    // Modo demonstração: fica na FIAP Paulista e, com trajeto, anda sozinho pelo caminho escolhido.
+    if (MODO_DEMO) {
+      let andadoM = 0;
+      let caminhoAtual: Coordenada[] | null = null;
+      const passo = () => {
+        const t = trajetoRef.current;
+        if (!t || t.caminho.length < 2) {
+          andadoM = 0;
+          caminhoAtual = null;
+          tratar(FIAP_PAULISTA);
+          return;
+        }
+        if (caminhoAtual !== t.caminho) {
+          caminhoAtual = t.caminho;
+          andadoM = 0;
+        }
+        andadoM += PASSO_DEMO_M;
+        const { ponto, restanteM } = pontoNoCaminho(t.caminho, andadoM);
+        ajustarTrajeto(() => ({ minutosAteDestino: Math.max(1, Math.round(restanteM / 80)) }));
+        tratar(ponto);
+      };
+      passo();
+      const relogio = setInterval(passo, INTERVALO_DEMO_MS);
+      return () => clearInterval(relogio);
+    }
+
     Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 5_000 },
-      (local) => {
-        const g = gradeRef.current;
-        if (!g) return; // Sem grade salva: o Mapa já avisa que os dados estão indisponíveis.
-        const coordenada = { latitude: local.coords.latitude, longitude: local.coords.longitude };
-        const faixa = faixaAtual(g.faixas);
-        const t = trajetoRef.current;
-        const r = processarPosicao(g, faixa, coordenada, motorRef.current, Date.now(), !!t);
-        motorRef.current = r.estado;
-
-        atualizarPosicao({
-          nivel: r.nivel ?? 'sem-dado',
-          local: r.celula?.referencia ?? '',
-          motivo: r.nivel ? motivoDoNivel(r.nivel, faixa) : '',
-          coordenada,
-          celulaId: r.celula?.id ?? null,
-        });
-
-        let antecipado: Alerta | null = null;
-        if (t) {
-          const proximo = proximoTrechoDeRisco(g, faixa, t.caminho, coordenada);
-          ajustarTrajeto(() => ({ proximoTrecho: proximo }));
-          // Antecedência do Perfil (F08 CA1): avisa antes de chegar ao próximo trecho de maior risco.
-          antecipado = avaliarAvisoAntecipado(proximo, r.nivel, preferenciasRef.current.antecedencia, avisadosRef.current);
-        }
-
-        if (r.alerta) disparar(r.alerta);
-        else {
-          if (antecipado) disparar(antecipado);
-          // Saiu da área de Risco alto: o alerta alto pode sair da tela (CA6). O antecipado tem o próprio tempo.
-          if (r.nivel !== 'alto') setAlertaAtivo((a) => (a?.nivel === 'alto' && !a.antecipado ? null : a));
-          // Durante o trajeto, a carinha do Pet acompanha o nível mesmo sem alerta (sem vibrar).
-          const nivelAgora = r.nivel ?? 'sem-dado';
-          if (t && nivelAgora !== nivelNoPetRef.current) {
-            nivelNoPetRef.current = nivelAgora;
-            enviarNivelRef.current(nivelAgora, { vibrar: false }).catch(() => {});
-          }
-        }
-      },
+      (local) => tratar({ latitude: local.coords.latitude, longitude: local.coords.longitude }),
     )
       .then((s) => {
         if (ativo) assinatura = s;

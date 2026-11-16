@@ -1,6 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 
+import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { lerPreferencia, PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 
 import type { Coordenadas } from './panico-api';
@@ -52,6 +53,7 @@ export async function registrarPedidoFeito(registradoEm: string) {
  * Sem permissão ou sem GPS, o pedido vai sem posição (a API aceita) em vez de não sair.
  */
 export async function posicaoAproximada(): Promise<Coordenadas> {
+  if (MODO_DEMO) return { latitude: -23.564, longitude: -46.653 }; // demonstração: perto da FIAP Paulista
   try {
     const permissao = await Location.getForegroundPermissionsAsync();
     if (!permissao.granted) return null;

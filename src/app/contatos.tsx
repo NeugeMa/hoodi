@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
-import { Alert, Pressable, Share, StyleSheet, View } from 'react-native';
+import {Pressable, Share, StyleSheet, View} from 'react-native';
 
 import { ColarLink } from '@/components/conta/colar-link';
 import { TelaConta } from '@/components/conta/tela-conta';
@@ -9,6 +9,7 @@ import { CaretRight, CloudSlash, ShareNetwork, Siren, SignOut, Trash, UserPlus, 
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
+import { perguntar } from '@/components/ui/perguntar';
 import { mensagemDeFalha } from '@/features/api/cliente';
 import { horaCurta } from '@/features/ajuda/pedido-ajuda';
 import { panicosRecebidos, type PanicoRecebido } from '@/features/ajuda/panico-api';
@@ -82,7 +83,7 @@ export default function ContatosScreen() {
 
   function confirmar(titulo: string, texto: string, rotulo: string, acao: () => Promise<void>) {
     // Ações que apagam ou desligam algo sempre pedem confirmação (design system v3).
-    Alert.alert(titulo, texto, [
+    perguntar(titulo, texto, [
       { text: 'Agora não', style: 'cancel' },
       {
         text: rotulo,

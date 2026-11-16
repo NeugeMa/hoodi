@@ -54,3 +54,15 @@ export async function notificarAlerta(alerta: Alerta, { som = false }: { som?: b
     trigger: Platform.OS === 'android' ? { channelId: som ? CANAL_COM_SOM : CANAL_SILENCIOSO } : null,
   });
 }
+
+/**
+ * Aviso do sistema que não é alerta de risco (ex.: o Hoodi Pet desconectou no meio do trajeto, F06 CA8).
+ * Sem som; vai pelo canal silencioso e o relógio espelha.
+ */
+export async function notificarAviso(titulo: string, texto: string) {
+  if (!(await prepararNotificacoes())) return;
+  await Notifications.scheduleNotificationAsync({
+    content: { title: titulo, body: texto, sound: false },
+    trigger: Platform.OS === 'android' ? { channelId: CANAL_SILENCIOSO } : null,
+  });
+}

@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { AvisoRisco } from '@/components/alerta/aviso-risco';
+import { SeloDemo } from '@/components/demo/selo-demo';
 import { usePushPedidosAjuda } from '@/features/ajuda/push';
 import { AcompanhamentoProvider } from '@/features/alerta/acompanhamento-context';
 import { ContaProvider, useConta } from '@/features/conta/conta-context';
@@ -53,6 +54,8 @@ export default function RootLayout() {
                     <Navegacao />
                     {/* Alerta de risco por cima de qualquer tela (F07). */}
                     <AvisoRisco />
+                    {/* Modo demonstração (?demo=1): selo de dados simulados em toda tela. */}
+                    <SeloDemo />
                   </AcompanhamentoProvider>
                 </PetProvider>
               </ContatosProvider>
