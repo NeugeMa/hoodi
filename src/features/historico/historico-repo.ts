@@ -1,5 +1,6 @@
 import { abrirBanco } from '@/db/banco';
 
+import { avisarHistoricoMudou } from './historico-eventos';
 import type { AlertaSalvo, NovoAlerta } from './tipos';
 
 /**
@@ -25,10 +26,12 @@ export async function registrarAlerta(alerta: NovoAlerta) {
     alerta.nivel,
     alerta.trecho,
   );
+  avisarHistoricoMudou();
 }
 
 /** "Apagar histórico" (F10 CA3). Também usado ao excluir a conta (F08). */
 export async function apagarHistorico() {
   const db = await abrirBanco();
   await db.runAsync('DELETE FROM alertas');
+  avisarHistoricoMudou();
 }

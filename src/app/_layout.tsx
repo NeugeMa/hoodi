@@ -8,10 +8,11 @@ import {
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AvisoRisco } from '@/components/alerta/aviso-risco';
-import { SeloDemo } from '@/components/demo/selo-demo';
+import { MolduraDemo } from '@/components/demo/selo-demo';
+import { IntroAnimada } from '@/components/intro/intro-animada';
 import { usePushPedidosAjuda } from '@/features/ajuda/push';
 import { AcompanhamentoProvider } from '@/features/alerta/acompanhamento-context';
 import { ContaProvider, useConta } from '@/features/conta/conta-context';
@@ -51,11 +52,12 @@ export default function RootLayout() {
               <ContatosProvider>
                 <PetProvider>
                   <AcompanhamentoProvider>
-                    <Navegacao />
-                    {/* Alerta de risco por cima de qualquer tela (F07). */}
-                    <AvisoRisco />
-                    {/* Modo demonstração (?demo=1): selo de dados simulados em toda tela. */}
-                    <SeloDemo />
+                    {/* Modo demonstração (?demo=1): faixa com o selo de dados simulados em toda tela. */}
+                    <MolduraDemo>
+                      <Navegacao />
+                      {/* Alerta de risco por cima de qualquer tela (F07). */}
+                      <AvisoRisco />
+                    </MolduraDemo>
                   </AcompanhamentoProvider>
                 </PetProvider>
               </ContatosProvider>
@@ -77,6 +79,8 @@ function Navegacao() {
   const logado = estado === 'logado';
   // Push dos pedidos de ajuda (F09): registra o aparelho e abre o pedido ao tocar no aviso.
   usePushPedidosAjuda(logado);
+  // Ao abrir: animação de introdução (logo e "Hoodi") por cima do Início, que já carrega embaixo.
+  const [intro, setIntro] = useState(true);
 
   useEffect(() => {
     if (estado !== 'carregando') SplashScreen.hideAsync();
@@ -86,27 +90,30 @@ function Navegacao() {
   if (estado === 'carregando') return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* O app abre sempre no Início, com ou sem conta. */}
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="pet/parear" />
-      <Stack.Screen name="pet/conectado" />
-      <Stack.Screen name="relogio" />
-      <Stack.Screen name="privacidade" />
-      <Stack.Screen name="permissoes" />
-      {/* Só o que depende da conta pede login: contatos e pedido de ajuda (F09) e rotas (F04, a API exige conta). */}
-      <Stack.Protected guard={logado} redirectTo="/entrar">
-        <Stack.Screen name="comparar-rotas" />
-        <Stack.Screen name="contatos" />
-        <Stack.Screen name="pedir-ajuda" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="ajuda/[id]" />
-      </Stack.Protected>
-      {/* Telas de conta só sem conta; ao entrar, saem sozinhas e o app volta para onde estava. */}
-      <Stack.Protected guard={!logado}>
-        <Stack.Screen name="(conta)" />
-      </Stack.Protected>
-      {/* Fora das proteções para o link do convite não se perder sem conta (a tela explica). */}
-      <Stack.Screen name="convite" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* O app abre sempre no Início, com ou sem conta. */}
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="pet/parear" />
+        <Stack.Screen name="pet/conectado" />
+        <Stack.Screen name="relogio" />
+        <Stack.Screen name="privacidade" />
+        <Stack.Screen name="permissoes" />
+        {/* Só o que depende da conta pede login: contatos e pedido de ajuda (F09) e rotas (F04, a API exige conta). */}
+        <Stack.Protected guard={logado} redirectTo="/entrar">
+          <Stack.Screen name="comparar-rotas" />
+          <Stack.Screen name="contatos" />
+          <Stack.Screen name="pedir-ajuda" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="ajuda/[id]" />
+        </Stack.Protected>
+        {/* Telas de conta só sem conta; ao entrar, saem sozinhas e o app volta para onde estava. */}
+        <Stack.Protected guard={!logado}>
+          <Stack.Screen name="(conta)" />
+        </Stack.Protected>
+        {/* Fora das proteções para o link do convite não se perder sem conta (a tela explica). */}
+        <Stack.Screen name="convite" />
+      </Stack>
+      {intro ? <IntroAnimada aoTerminar={() => setIntro(false)} /> : null}
+    </>
   );
 }

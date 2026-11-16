@@ -1,81 +1,47 @@
-# Prompts de IA usados no app mobile
+# Prompts de IA
 
-Regra da GS ("IA como copiloto"): registrar os prompts e saber explicar cada linha.
-Ferramenta: **Claude Code** (Anthropic), no app desktop, de 14 a 17/11/2026. A equipe revisou, testou
-e commitou cada entrega; a IA não fez commits.
+Regra da GS: registrar os prompts usados e saber explicar o resultado.
+Ferramenta: **Claude Code** (Anthropic). Cada entrega foi revisada, testada e commitada pela equipe.
 
-Os prompts estão resumidos na ordem em que foram feitos, com o que a IA entregou e o que a equipe decidiu.
+[← Voltar ao README](README.md)
 
-## 1. Leitura do projeto e planejamento (14/11)
+## Design e interface
 
-> "Tenho a produção de um projeto mobile. Vou deixar a pasta do projeto e mandar o nosso problema e produto
-> (briefing da GS, design system v3, QA no Azure Boards v2 e as carinhas em JSON). Veja o que falta no mobile."
+| Prompt | Resultado |
+|---|---|
+| "Refaça a tela de login e de criação de conta a partir destas inspirações (imagens), seguindo o design system v3." | Entrar e Criar conta com o Hoodi Pet como mascote no topo |
+| "Quando a pessoa estiver digitando a senha, o olho do mascote fica fechado." | Carinha de olhos fechados no campo de senha |
+| "Deixe as duas telas na mesma proporção e tire os textos de apoio dos campos." | Topo igual em Entrar e Criar conta, formulário mais limpo |
+| "Os campos ficam ilegíveis com o teclado aberto no celular." | Pet encolhe para o topo e o rodapé some com o teclado |
+| "Use os ícones do design system (PDF) para o ícone e a splash do app." | Ícone, ícone adaptativo do Android, favicon e splash clara e escura |
+| "Ao abrir o app, mostre uma animação de introdução com a palavra Hoodi e a logo, e caia no Início. Sem login, o Pet fica dormindo." | Abertura animada e Pet dormindo sem conta |
+| "Implemente as carinhas do `carinhas.json` (o mesmo do firmware do Pet)." | Carinhas do app iguais às do visor do Pet (18 × 12) |
 
-- A IA cruzou o QA v2 (F01 a F10) e o design system com o código e listou o que existia e o que faltava.
-- Decisões da equipe: fazer F01, F02, F04, F08 e F09; seguir a API do Abner quando ela divergisse do QA.
+## Integração com a API
 
-## 2. Bluetooth e API (14/11)
+| Prompt | Resultado |
+|---|---|
+| "Leia o contrato OpenAPI do backend e diga o que muda no app em relação ao QA." | Lista das diferenças (cadastro em duas etapas, contatos por convite, grade H3) |
+| "Ligue o cadastro, o login, a renovação do token e o esqueci a senha à API." | Cliente da API com renovação automática e sessão no SecureStore (F01) |
+| "Siga os contatos por convite da API em vez do SMS do QA." | Contatos por link de convite e pedido de ajuda (F09) |
+| "Faça a exclusão de conta com o DELETE do backend." | Excluir conta pedindo a senha (F08) |
+| "Suba a API localmente e teste o app de ponta a ponta." | 72 verificações; achou o redirecionamento para HTTPS que impede o celular de conectar |
 
-> Prompts com as respostas do Abner e do colega (protocolo BLE v1 do Hoodi Pet, contrato da API, repositório
-> do backend e o zip `hoodi-pet`).
+## Bluetooth e Hoodi Pet
 
-- A IA leu o contrato OpenAPI e o protocolo BLE e apontou as diferenças com o app (protocolo provisório,
-  contatos por convite em vez de SMS, grade H3 com 4 níveis).
+| Prompt | Resultado |
+|---|---|
+| "Junte o protocolo BLE v1 do Pet (zip do colega) com o nosso código." | Pareamento com código, comando de 9 bytes e carinha seguindo o nível |
+| "Quando o Pet vibrar por risco, espere o clique no Pet; sem clique, vibre o Pet e o celular de novo. Pet desconectado vibra o celular." | Reforço do alerta e opção "Avisar no celular também" |
+| "Se o Pet cair no meio do trajeto, avise e tente reconectar." | Notificação de desconexão e reconexão automática (F06 CA8) |
 
-## 3. F01 · Cadastro e acesso (15/11)
+## Regras do produto (QA v2)
 
-> "Crie a branch feat/api-F01 a partir da homologation e comece."
-> "Refaça a tela de login/criação de conta com estas inspirações (imagens)."
-> "Tire o 'Etapa 1 de 2' e a caixa de 18 anos; criar conta com nome, idade (calendário), e-mail e senha."
-> "Quando eu escrever a senha, o olho do mascote fecha." · "Hoodi sempre com H maiúsculo."
-> "Ao abrir o app, ele precisa ir para o Início, não para o login."
+| Prompt | Resultado |
+|---|---|
+| "Veja o que falta no mobile cruzando o QA no Azure e o design system com o código." | Mapa de F01 a F10: o que existia e o que faltava |
+| "Compare rotas com a regra de 70% e mostre no cartão quanto do caminho está sem dado." | Comparar rotas sem tratar "sem dado" como área tranquila (F04) |
 
-- Cliente da API com renovação automática do login; sessão no SecureStore; telas Entrar, Criar conta,
-  Confirmar (link do e-mail), Esqueci a senha; Hoodi Pet como mascote que fecha os olhos na senha.
+## O que ficou com a equipe
 
-## 4. F09 · Contatos e pedido de ajuda (15/11)
-
-> "Crie a branch para o F09." · "Siga os contatos por convite da API."
-
-- Contatos por convite (link `hoodi://convite`), Pedir ajuda com prévia, limites de 5 contatos e
-  3 pedidos por hora, pedido recebido pelo contato, push.
-
-## 5. F04 e F08 · Comparar rotas e Perfil (15/11)
-
-> "Crie uma branch para F04 e F08 a partir da homologation e comece a produção."
-
-- Comparar rotas (regra do QA: trecho sem dado não compara), Perfil com preferências, Dados e privacidade,
-  revogar consentimento e excluir conta.
-
-## 6. F02, aviso antecipado e o Pet v1 do Abner (15 e 16/11)
-
-> "Faça a F02 e o aviso do F08." · "O Abner mandou o zip com o Pet v1 e a ideia do 'vi' no Pet:
-> sem clique em 15–20 s, vibra de novo o Pet e o celular; Pet desconectado vibra o celular; opção 'avisar no
-> celular também'." · "Faça a exclusão de conta com o DELETE dele."
-
-- Permissões com o motivo de cada uma, tema escuro à noite, aviso antecipado, junção do Pet v1 com o
-  F02/F08, exclusão de conta pedindo a senha, pânico na API real; 18 testes automáticos.
-
-## 7. Testes com a API (16/11)
-
-> "Suba a API do Abner e faça todo o teste que você puder."
-
-- A IA subiu a API localmente e testou o app de ponta a ponta (72 verificações e 9 cenários rodando o próprio
-  código do app). Achou e documentou: o `dotnet run` padrão redireciona para HTTPS e o celular não conecta.
-
-## 8. Entrega (16 e 17/11)
-
-> "Faça tudo o que falta (menos o do Abner). Os ícones estão no design system. Quero gravar o vídeo com o
-> Claude Motion pelo localhost."
-
-- Carinhas a partir do `carinhas.json` do firmware, reconexão do Pet no trajeto, ícone e splash do design
-  system, `eas.json`, modo demonstração no navegador (dados simulados, sinalizados na tela), mapa web em SVG,
-  prints das telas e este arquivo.
-
-## Como a IA foi usada
-
-- **Para fazer:** código das telas e da lógica, testes e documentação, sempre a partir dos requisitos do QA v2,
-  do design system v3 e dos contratos dos colegas.
-- **Para revisar:** typecheck, lint e testes antes de cada entrega; testes de ponta a ponta com a API.
-- **O que ficou com a equipe:** as decisões de produto (70% ou 100% no Comparar rotas, o nome do nível 3,
-  a pressão longa do Pet), os commits, o teste no celular e com o Pet físico, e o vídeo.
+As decisões de produto (regra de 70%, ODS, nome do nível 3), os commits, o teste no celular e com o Pet físico, e o vídeo.

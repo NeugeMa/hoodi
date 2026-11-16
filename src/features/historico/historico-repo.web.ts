@@ -1,3 +1,4 @@
+import { avisarHistoricoMudou } from './historico-eventos';
 import type { AlertaSalvo, NovoAlerta } from './tipos';
 
 /**
@@ -31,8 +32,10 @@ export async function registrarAlerta(alerta: NovoAlerta) {
   const atuais = ler();
   const id = atuais.reduce((max, a) => Math.max(max, a.id), 0) + 1;
   gravar([...atuais, { ...alerta, id }]);
+  avisarHistoricoMudou();
 }
 
 export async function apagarHistorico() {
   gravar([]);
+  avisarHistoricoMudou();
 }
