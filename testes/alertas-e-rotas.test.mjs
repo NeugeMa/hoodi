@@ -66,9 +66,22 @@ const rota = (rotaId, duracaoSegundos, exposicaoRelativa, percentualSemEstimativ
 });
 const resultado = (situacao, motivo, rotas) => ({ situacao, motivo, versaoGrade: 'v', rotas });
 
-test('comparar rotas (F04 CA2): qualquer trecho sem dado não compara', () => {
+test('comparar rotas (F04 CA2): com 70% ou mais de cobertura compara e mostra quanto está sem dado', () => {
+  // O exemplo do mock da API: r2 tem 10% sem estimativa.
   const r = compararRotas(resultado('concluida', null, [rota('r1', 720, 1020, 0, 1), rota('r2', 880, 1300, 10, 2)]), null, null);
+  assert.equal(r.tipo, 'comparada');
+  assert.equal(r.menorRisco.id, 'r1');
+  assert.equal(r.normal.semDadoPct, 0);
+  const r2 = compararRotas(resultado('concluida', null, [rota('a', 600, 1300, 25, 2), rota('b', 900, 1000, 0, 1)]), null, null);
+  assert.equal(r2.tipo, 'comparada');
+  assert.equal(r2.normal.semDadoPct, 25); // o cartão avisa "25% do caminho sem dado"
+});
+
+test('comparar rotas (F04 CA2): rota com mais de 30% sem dado não compara', () => {
+  const r = compararRotas(resultado('concluida', null, [rota('a', 600, 1000, 0, 1), rota('b', 900, 1300, 31, 2)]), null, null);
   assert.equal(r.tipo, 'sem-dado');
+  const r2 = compararRotas(resultado('inconclusiva', 'cobertura_insuficiente', [rota('a', 600, 1000, 5, null), rota('b', 900, null, 40, null)]), null, null);
+  assert.equal(r2.tipo, 'sem-dado');
 });
 
 test('comparar rotas (F04 CA1): rota normal x menor risco, minutos a mais e frase', () => {

@@ -338,12 +338,12 @@ Aberta pelo **Comparar rotas** do Início (precisa de conta, porque a API de rot
 - **Origem:** sempre a sua posição atual (TC13). Sem permissão de localização, a tela pede antes.
 - **Destino:** endereço ou nome do lugar, convertido em coordenada pelo **próprio celular** (`expo-location`); nada disso vai para o servidor do Hoodi além da consulta de rotas. Vazio ou não encontrado: o app explica e não compara (CA4).
 - **Resultado** (`POST /v1/rotas/avaliar`, ainda no mock): cartões **Menor risco registrado** e **Rota normal** (a mais rápida), com a diferença em minutos e uma frase como "Esta rota evita 3 células de risco alto" (contada na grade salva no aparelho) ou, sem grade, a diferença percentual de risco registrado (CA1). Se a mais rápida já é a de menor risco, aparece um cartão só.
-- **Trecho sem dado (CA2 · TC14):** se qualquer rota tem trecho sem dado (pela API ou pela grade do aparelho), o app diz "Não dá para comparar" e mostra as rotas só como "Rota 1, Rota 2". É mais rígido que a regra de 70% da API, de propósito, para seguir o QA v2.
+- **Trecho sem dado (CA2 · TC14), regra dos 70% (decisão da equipe em 16/11, igual ao contrato da API):** o app compara quando **todas** as rotas têm pelo menos 70% do caminho com dado, e cada cartão mostra quanto falta, por exemplo **"10% do caminho sem dado. Sem dado não quer dizer área tranquila."** Se alguma rota tem mais de 30% sem dado (pela API ou pela grade do aparelho, vale a maior), o app diz "Não dá para comparar" e mostra as rotas só como "Rota 1, Rota 2", sem indicar a de menor risco. A regra fica em [`comparar.ts`](src/features/rotas/comparar.ts) (`COBERTURA_MINIMA`).
 - **Fora da área (CA4)** e **sem internet (CA5 · TC34):** avisos próprios; sem internet, o botão **Ver o mapa** leva ao Mapa com os dados salvos.
 - **Iniciar trajeto (CA6):** começa o acompanhamento com o caminho da rota escolhida (o Mapa desenha) e volta ao Início. Sem consentimento, pede antes (F08 CA4 · TC38).
 - **Linguagem (CA3):** só "menor risco registrado" e "melhor dado disponível no período".
 
-> Com o mock do Prism, a resposta de exemplo tem uma rota com 10% sem dado, então a tela mostra "Não dá para comparar" (é a regra do CA2 funcionando). Para ver o TC13 com as duas rotas, é preciso a API real ou um exemplo do Abner com as rotas 100% com dado.
+> Com o mock do Prism, a resposta de exemplo tem uma rota com 10% sem dado: o app compara e o cartão dessa rota mostra "10% do caminho sem dado". **No Azure, o F04 CA2 e o TC14 precisam ser atualizados para a regra dos 70%.**
 
 ### Permissões e tema escuro (F02)
 
