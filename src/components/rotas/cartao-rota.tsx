@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { CheckCircle, Path, ShieldCheck } from '@/components/icones';
+import { CheckCircle, Path, Question, ShieldCheck } from '@/components/icones';
 import { Texto } from '@/components/ui/texto';
 import { espaco, raio } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
@@ -11,6 +11,8 @@ type Props = {
   metros: number;
   /** Frase de explicação (só na rota de menor risco registrado). */
   frase?: string;
+  /** Parte do caminho (%) sem dado de risco. Maior que zero: o cartão avisa (F04 CA2). */
+  semDadoPct?: number;
   /** Destaque da rota de menor risco registrado (nunca "rota segura", CA3). */
   menorRisco?: boolean;
   selecionada: boolean;
@@ -22,14 +24,16 @@ function distancia(m: number) {
 }
 
 /** Card de rota (design system v3): tempo, distância e, na de menor risco, a frase que explica. */
-export function CartaoRota({ titulo, minutos, metros, frase, menorRisco, selecionada, aoEscolher }: Props) {
+export function CartaoRota({ titulo, minutos, metros, frase, semDadoPct = 0, menorRisco, selecionada, aoEscolher }: Props) {
   const { cores } = useTema();
   const Icone = menorRisco ? ShieldCheck : Path;
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected: selecionada }}
-      accessibilityLabel={`${titulo}. ${minutos} minutos, ${distancia(metros)}.${frase ? ` ${frase}` : ''}`}
+      accessibilityLabel={`${titulo}. ${minutos} minutos, ${distancia(metros)}.${frase ? ` ${frase}` : ''}${
+        semDadoPct > 0 ? ` ${semDadoPct}% do caminho sem dado.` : ''
+      }`}
       onPress={aoEscolher}
       style={({ pressed }) => [
         styles.cartao,
@@ -54,6 +58,15 @@ export function CartaoRota({ titulo, minutos, metros, frase, menorRisco, selecio
           {frase}
         </Texto>
       ) : null}
+      {/* Sem dado nunca vira "tranquilo": quanto do caminho a comparação não conhece (F04 CA2). */}
+      {semDadoPct > 0 ? (
+        <View style={styles.semDado}>
+          <Question size={16} color={cores.grafiteSuave} weight="bold" />
+          <Texto variante="legenda" style={styles.textoSemDado}>
+            {semDadoPct}% do caminho sem dado. Sem dado não quer dizer área tranquila.
+          </Texto>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -62,4 +75,6 @@ const styles = StyleSheet.create({
   cartao: { borderRadius: raio.md, borderWidth: 2, padding: espaco[4], gap: espaco[2] },
   linha: { flexDirection: 'row', alignItems: 'center', gap: espaco[2] },
   titulo: { flex: 1 },
+  semDado: { flexDirection: 'row', alignItems: 'flex-start', gap: espaco[1] },
+  textoSemDado: { flex: 1 },
 });
