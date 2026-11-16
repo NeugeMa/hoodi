@@ -51,7 +51,7 @@
 | **Problema, em uma frase** | Caminhar sozinho à noite é inseguro, e tirar o celular do bolso na rua para checar o caminho é justamente o que a pessoa quer evitar |
 | **Como funciona** | O app guarda no celular a grade de risco feita com dados da SSP-SP, cruza a posição com a célula e o horário e, quando o risco sobe, avisa pelo relógio (notificação) e pelo Hoodi Pet (vibração e carinha). Também compara rotas pelo menor risco registrado e avisa contatos de confiança no Pedir ajuda |
 | **O que cada parte faz** | **App (este repositório):** a interface do cidadão · **API .NET:** contas, contatos, pedido de ajuda e rotas · **ML:** a grade de risco · **Hoodi Pet (ESP32):** o alerta no bolso · **Infra Linux:** hospeda a API |
-| **Repositório** | https://github.com/NeugeMa/hoodi |
+| **Repositórios** | App (este): https://github.com/NeugeMa/hoodi · API .NET (Abner): https://github.com/APB-Abner/Hoodi |
 | **Indicador de impacto** | **% de trajetos feitos pela rota de menor risco registrado** (medido pelo app, no Comparar rotas) e **sensação de segurança antes e depois** (pesquisa de 1 a 5 com estudantes do noturno da FIAP Paulista) |
 | **ODS conectados** | **11** (meta 11.7), **16** (16.1), **5** (5.2) e **4** (4.a): veja [ODS](#ods) |
 
@@ -142,7 +142,9 @@ EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000
 EXPO_PUBLIC_MOCK_URL=http://IP-DO-PC:4010
 ```
 
-Suba a API com `--Https:RedirectEnabled=false` (sem ele o celular não conecta) e o mock das rotas. Passo a passo em [docs/integracoes.md](docs/integracoes.md#rodar-com-a-api-local).
+A API fica no repositório do Abner: **https://github.com/APB-Abner/Hoodi**. Suba a API com `--Https:RedirectEnabled=false` (sem ele o celular não conecta), o **Mailpit** (recebe o e-mail do cadastro) e o mock das rotas.
+
+Em desenvolvimento, **o e-mail de confirmação não chega no Gmail**: ele aparece no Mailpit, em `http://localhost:8025` no PC. Copie o link `hoodi://confirmar#token=...` e cole em **Link do e-mail**, na tela Confira seu e-mail. Passo a passo completo em [docs/integracoes.md](docs/integracoes.md#rodar-com-a-api-local).
 
 ### 3. Modo demonstração no navegador
 
