@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "hoodi",
+    "name": "Hoodi",
     "slug": "hoodi",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,11 +8,11 @@
     "scheme": "hoodi",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F5F4F1",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -20,7 +20,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "server",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -28,11 +28,33 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#F5F4F1",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#121215",
+            "image": "./assets/images/splash-icon-escuro.png"
+          }
         }
-      ]
+      ],
+      "expo-sqlite",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "O Hoodi usa o Bluetooth para conectar ao Hoodi Pet e mandar os avisos de risco para ele."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O Hoodi usa sua localização, só no aparelho, para dizer o risco registrado onde você está e avisar quando ele sobe."
+        }
+      ],
+      "expo-notifications",
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
