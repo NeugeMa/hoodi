@@ -82,7 +82,10 @@ export async function baixarGrade(versao: VersaoGrade): Promise<GradeRisco> {
   try {
     return gradeDoCsv(csv, atual);
   } catch (e) {
-    if (e instanceof CsvInvalido) throw new ErroDownload('erro');
+    if (e instanceof CsvInvalido) {
+      console.warn('[grade] CSV recusado:', e.message);
+      throw new ErroDownload('erro');
+    }
     throw e;
   }
 }

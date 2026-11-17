@@ -39,6 +39,7 @@ async function sincronizar(): Promise<Resultado> {
     }
     return { grade, falha: null };
   } catch (e) {
+    if (!(e instanceof ErroDownload)) console.warn('[grade] falha inesperada ao sincronizar', e);
     return { grade, falha: e instanceof ErroDownload ? e.motivo : 'erro' };
   }
 }
