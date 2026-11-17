@@ -15,10 +15,23 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_AMBIENTE": "homologacao"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_AMBIENTE": "producao"
+      }
+    },
+    "demo": {
+      "extends": "preview",
+      "env": {
+        "EXPO_PUBLIC_DEMO": "1",
+        "EXPO_PUBLIC_AMBIENTE": "demo"
+      }
     }
   }
 }
