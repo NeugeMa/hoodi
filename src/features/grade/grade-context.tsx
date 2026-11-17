@@ -29,8 +29,13 @@ async function sincronizar(): Promise<Resultado> {
   // Modo demonstração: grade simulada em volta da FIAP Paulista (não é registro da SSP-SP).
   if (MODO_DEMO) return { grade: gradeDemo(), falha: null };
   let grade: GradeSalva | null = null;
+  // Cache ilegível não impede de checar a versão publicada e baixar a grade de novo.
   try {
     grade = await lerGradeSalva();
+  } catch (e) {
+    console.warn('[grade] não foi possível ler a grade salva', e);
+  }
+  try {
     const versao = await buscarVersao();
     // Grade salva sem contorno = formato antigo (antes do H3): baixa de novo.
     const antiga = grade !== null && grade.celulas.some((c) => !c.contorno);

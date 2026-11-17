@@ -14,6 +14,9 @@ import { distanciaAteCelulaM, distanciaM } from './geo';
  *   e alerta quando o intervalo acaba, se a pessoa ainda estiver acima do nível do último alerta.
  * - CA4: margem de 30 m na divisa; só troca de célula depois de entrar 30 m na nova.
  * - CA5: "Sem dado" nunca alerta e não conta como nível conhecido.
+ * - Alerta ambiente: não depende de trajeto. Quem decide se pode alertar (consentimento, horário)
+ *   avisa o motor por `podeAlertar`; sem permissão o estado segue, mas não há alerta nem pendente.
+ * - Primeira leitura já em Risco alto alerta uma vez (quem abre o app dentro da área é avisado).
  */
 
 export const INTERVALO_MINIMO_MS = 2 * 60 * 1000;
@@ -101,7 +104,7 @@ export function processarPosicao(
   p: Coordenada,
   anterior: EstadoMotor,
   agora: number,
-  emTrajeto: boolean,
+  podeAlertar: boolean,
 ): ResultadoMotor {
   const celula = celulaComMargem(grade, p, anterior.celulaId);
   if (!celula) {
@@ -113,10 +116,12 @@ export function processarPosicao(
   if (nivel === 'sem-dado') return { estado, celula, nivel, alerta: null };
 
   const subiu =
-    anterior.ultimoNivelConhecido !== null && ORDEM[nivel] > ORDEM[anterior.ultimoNivelConhecido];
+    anterior.ultimoNivelConhecido === null
+      ? nivel === 'alto'
+      : ORDEM[nivel] > ORDEM[anterior.ultimoNivelConhecido];
   estado.ultimoNivelConhecido = nivel;
 
-  if (!emTrajeto || nivel === 'tranquila') {
+  if (!podeAlertar || nivel === 'tranquila') {
     estado.pendente = false;
     return { estado, celula, nivel, alerta: null };
   }
@@ -148,8 +153,9 @@ export function motivoDoNivel(nivel: NivelRisco, faixa: FaixaHoraria | null) {
 }
 
 /**
- * Próximo trecho de maior risco no caminho do trajeto (F05 CA1):
- * a primeira célula de Risco alto à frente (ou de Risco médio, se não houver alto).
+ * Próximo trecho de risco no caminho do trajeto (F05 CA1): a primeira célula à frente com
+ * Risco médio ou alto. Um alto distante não esconde um médio mais perto; quando a pessoa
+ * chega ao médio, o alto vira o próximo trecho.
  */
 export function proximoTrechoDeRisco(
   grade: GradeRisco,
@@ -170,7 +176,6 @@ export function proximoTrechoDeRisco(
   });
 
   let percorrido = 0;
-  let medio: ProximoTrecho | null = null;
   const atual = celulaEm(grade, posicao)?.id;
   for (let i = inicio + 1; i < caminho.length; i++) {
     percorrido += distanciaM(caminho[i - 1], caminho[i]);
@@ -178,10 +183,9 @@ export function proximoTrechoDeRisco(
     if (!c || c.id === atual) continue;
     const n = nivelNaFaixa(c, faixa);
     const distanciaMetros = Math.round(percorrido / 10) * 10;
-    if (n === 'alto') return { rua: c.referencia, nivel: 'alto', distanciaMetros, celulaId: c.id };
-    if (n === 'medio' && !medio) medio = { rua: c.referencia, nivel: 'medio', distanciaMetros, celulaId: c.id };
+    if (n === 'alto' || n === 'medio') return { rua: c.referencia, nivel: n, distanciaMetros, celulaId: c.id };
   }
-  return medio;
+  return null;
 }
 
 export type ProximoTrecho = {

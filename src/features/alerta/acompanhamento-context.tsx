@@ -55,7 +55,7 @@ const Contexto = createContext<AcompanhamentoContexto | null>(null);
 /**
  * Acompanhamento da posição e alerta de risco (F05/F07).
  * Com o app aberto, segue o GPS, descobre a célula na grade salva, atualiza o Início
- * e, durante um trajeto, dispara o alerta quando o nível sobe: aviso na tela,
+ * e dispara o alerta quando o nível sobe, com ou sem trajeto (alerta ambiente): aviso na tela,
  * notificação (espelhada no relógio), vibração no Hoodi Pet e registro no Histórico.
  *
  * Como o alerta chega a cada canal:
@@ -130,13 +130,12 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
     [aoEvento, cancelarConfirmacao],
   );
 
-  // Sem trajeto não há alerta (F05 CA4): limpa o estado do motor quando o trajeto acaba
-  // e o Pet volta a dormir.
+  // Fim do trajeto (F05 CA4): limpa os avisos do trajeto e o Pet volta a dormir.
+  // O alerta ambiente continua, então o nível conhecido do motor é mantido.
   const emTrajeto = !!trajeto;
   const estavaEmTrajetoRef = useRef(false);
   useEffect(() => {
     if (!emTrajeto) {
-      motorRef.current = { ...motorRef.current, ultimoAlertaEm: null, nivelUltimoAlerta: null, pendente: false };
       cancelarConfirmacao();
       nivelNoPetRef.current = null;
       avisadosRef.current = new Set();
@@ -219,7 +218,10 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
       if (!g) return; // Sem grade salva: o Mapa já avisa que os dados estão indisponíveis.
       const faixa = faixaAtual(g.faixas);
       const t = trajetoRef.current;
-      const r = processarPosicao(g, faixa, coordenada, motorRef.current, Date.now(), !!t);
+      // Consentimento revogado (F08 CA4) ou fora do horário do Perfil: o motor segue a posição,
+      // mas não alerta nem guarda pendente, e o aviso antecipado não é marcado como dado.
+      const podeAlertar = !!consentimentoRef.current && horarioPermite(preferenciasRef.current.horario);
+      const r = processarPosicao(g, faixa, coordenada, motorRef.current, Date.now(), podeAlertar);
       motorRef.current = r.estado;
 
       // Grade da API (H3) não traz o nome da rua: o celular procura uma vez por célula.
@@ -239,7 +241,8 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
         const proximo = proximoTrechoDeRisco(g, faixa, t.caminho, coordenada);
         ajustarTrajeto(() => ({ proximoTrecho: proximo }));
         // Antecedência do Perfil (F08 CA1): avisa antes de chegar ao próximo trecho de maior risco.
-        antecipado = avaliarAvisoAntecipado(proximo, r.nivel, preferenciasRef.current.antecedencia, avisadosRef.current);
+        if (podeAlertar)
+          antecipado = avaliarAvisoAntecipado(proximo, r.nivel, preferenciasRef.current.antecedencia, avisadosRef.current);
       }
 
       if (r.alerta) disparar(r.alerta);
@@ -247,9 +250,9 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
         if (antecipado) disparar(antecipado);
         // Saiu da área de Risco alto: o alerta alto pode sair da tela (CA6). O antecipado tem o próprio tempo.
         if (r.nivel !== 'alto') setAlertaAtivo((a) => (a?.nivel === 'alto' && !a.antecipado ? null : a));
-        // Durante o trajeto, a carinha do Pet acompanha o nível mesmo sem alerta (sem vibrar).
+        // A carinha do Pet acompanha o nível mesmo sem alerta (sem vibrar), com ou sem trajeto.
         const nivelAgora = r.nivel ?? 'sem-dado';
-        if (t && nivelAgora !== nivelNoPetRef.current) {
+        if (podeAlertar && nivelAgora !== nivelNoPetRef.current) {
           nivelNoPetRef.current = nivelAgora;
           enviarNivelRef.current(nivelAgora, { vibrar: false }).catch(() => {});
         }

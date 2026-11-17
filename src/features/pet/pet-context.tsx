@@ -183,7 +183,8 @@ export function PetProvider({ children }: { children: ReactNode }) {
           vigiar(pet);
         }
       } catch {
-        // Pet longe ou desligado: fica como pareado e desconectado.
+        // Pet longe ou desligado: fica como pareado e desconectado e tenta de novo (3, 6, 12, 24, 30 s).
+        if (ativo) reconectarRef.current(pet, 0);
       }
     });
     return () => {
