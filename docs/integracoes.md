@@ -6,15 +6,74 @@ API .NET do Abner, modo demonstração, grade de risco, Bluetooth com o Hoodi Pe
 
 ## Rodar com a API local
 
-1. No PC (repositório da API, .NET 10):
-   ```bash
-   dotnet run --project Hoodi.Api -- --urls http://0.0.0.0:5000 --environment Development --Https:RedirectEnabled=false
-   ```
-   **O `--Https:RedirectEnabled=false` é obrigatório para o celular:** sem ele, a API responde 307 e manda tudo para `https://…:443`, e o app mostra "Não foi possível falar com o Hoodi". O `--environment Development` deixa a API subir sem as chaves de produção. Documentação em `http://IP-DO-PC:5000/scalar`.
-2. Na raiz deste app, crie o `.env` com `EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000` (o IP da máquina na rede, não `localhost`) e reinicie o `npm start`.
-3. O e-mail do cadastro cai no **Mailpit** (SMTP em `127.0.0.1:1025`): `http://localhost:8025` no PC.
-4. Partes da API que ainda não existem (grade, rotas, dispositivos) continuam no mock: `npx @stoplight/prism-cli mock contracts/openapi.yaml`.
+Para testar com **conta de verdade** (criar conta, confirmar pelo e-mail, entrar e continuar logado), três coisas rodam no PC: a **API**, o **Mailpit** (recebe os e-mails) e o **mock das rotas**. O app (este repositório) roda à parte, com o `npm start`. Para só ver o app funcionando, sem nada disso, use o [modo demonstração](#modo-demonstração-no-navegador-vídeo-e-prints).
 
+**Pré-requisitos:** [.NET 10 SDK](https://dotnet.microsoft.com/download), [Node.js](https://nodejs.org/) 20+ e o Mailpit (passo 2). Celular e PC na mesma rede Wi-Fi.
+
+### 1. Baixar e subir a API
+
+A API fica no repositório do Abner: **https://github.com/APB-Abner/Hoodi**
+
+```bash
+git clone https://github.com/APB-Abner/Hoodi.git
+cd Hoodi
+dotnet run --project Hoodi.Api -- --urls http://0.0.0.0:5000 --environment Development --Https:RedirectEnabled=false
+```
+
+- **O `--Https:RedirectEnabled=false` é obrigatório para o celular:** sem ele, a API responde 307 e manda tudo para `https://…:443`, e o app mostra "Não foi possível falar com o Hoodi".
+- O `--environment Development` deixa a API subir sem as chaves de produção. Nesse modo, as chaves de login mudam toda vez que a API sobe: se ela reiniciar, é preciso entrar de novo no app.
+- Documentação da API em `http://IP-DO-PC:5000/scalar`.
+
+### 2. Receber o e-mail do cadastro (Mailpit)
+
+Em desenvolvimento, **a API não manda e-mail de verdade** (nada chega no Gmail). Ela entrega o e-mail a um servidor de e-mail de teste no próprio PC, na porta `1025`. O **Mailpit** faz esse papel e mostra os e-mails numa página.
+
+Com Docker:
+
+```bash
+docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
+```
+
+Sem Docker: baixe o executável em [github.com/axllent/mailpit/releases](https://github.com/axllent/mailpit/releases) e rode `mailpit`.
+
+Os e-mails aparecem em **http://localhost:8025**, no PC.
+
+### 3. Subir o mock das rotas
+
+O **Comparar rotas** ainda usa o mock da API. Rode **dentro da pasta do repositório do Abner** (é lá que fica o `contracts/openapi.yaml`):
+
+```bash
+npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0 -p 4010
+```
+
+### 4. Apontar o app para o PC
+
+Na raiz **deste** repositório, crie o arquivo `.env` com o IP do PC na rede (no Windows, `ipconfig`). Não use `localhost`: no celular, `localhost` é o próprio celular.
+
+```
+EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000
+EXPO_PUBLIC_MOCK_URL=http://IP-DO-PC:4010
+```
+
+Depois rode (ou reinicie) o `npm start` e abra o app no celular pelo Expo Go. Se o Windows perguntar, permita o acesso do .NET e do Node na rede privada.
+
+### 5. Criar a conta e confirmar pelo link
+
+1. No app, toque em **Criar conta**, preencha e envie. O app mostra **Confira seu e-mail**.
+2. No PC, abra **http://localhost:8025** e abra o e-mail "Confirme seu e-mail".
+3. Copie o link inteiro, que começa com `hoodi://confirmar#token=`. Ele vale por **30 minutos**.
+4. Mande o link para o celular (por exemplo, pelo WhatsApp para você mesma) e cole no campo **Link do e-mail** da tela Confira seu e-mail.
+5. Pronto: a conta é confirmada e o app já entra. Nas próximas vezes, é só **Entrar** com o e-mail e a senha.
+
+O mesmo vale para **Esqueci a senha** (link `hoodi://redefinir-senha#token=`) e para os **convites de contato** (link `hoodi://convite#codigo=`).
+
+### O que ainda não vem da API
+
+| Parte | Situação |
+|---|---|
+| Contas, contatos, convites, pedido de ajuda, excluir conta | **Na API de verdade** |
+| Comparar rotas (`/v1/rotas/avaliar`) | **Mock** (Prism, passo 3): a API ainda não calcula rotas |
+| Grade de risco do Mapa | **Ainda não publicada** pela API (contrato v0.6, com o Abner). O Mapa mostra "Dados de risco ainda não publicados"; no modo demonstração, aparece uma grade simulada |
 
 ## Modo demonstração no navegador (vídeo e prints)
 

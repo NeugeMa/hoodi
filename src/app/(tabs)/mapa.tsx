@@ -29,6 +29,10 @@ const SEM_GRADE: Record<FalhaDownload, { titulo: string; texto: string }> = {
     titulo: 'Dados de risco indisponíveis',
     texto: 'O servidor de dados ainda não está configurado neste app.',
   },
+  'nao-publicada': {
+    titulo: 'Dados de risco ainda não publicados',
+    texto: 'O servidor do Hoodi está no ar, mas ainda não tem a grade de risco. O mapa mostra as células assim que ela for publicada.',
+  },
   'checksum-invalido': {
     titulo: 'Dados recusados',
     texto: 'O arquivo recebido não passou na verificação e não foi usado.',

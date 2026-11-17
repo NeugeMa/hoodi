@@ -16,6 +16,8 @@ export type FalhaDownload =
   | 'sem-servidor'
   /** Sem resposta: sem internet, servidor fora do ar ou tempo esgotado. */
   | 'sem-internet'
+  /** O servidor respondeu, mas ainda não publica a grade (404): a API v0.6 ainda não tem a grade real. */
+  | 'nao-publicada'
   /** O arquivo chegou, mas o SHA-256 não confere (F03 CA8). */
   | 'checksum-invalido'
   /** Resposta inesperada do servidor. */
@@ -32,6 +34,7 @@ async function buscarTexto(caminho: string) {
   const timer = setTimeout(() => controle.abort(), TEMPO_LIMITE_MS);
   try {
     const resposta = await fetch(`${API_URL}${caminho}`, { signal: controle.signal });
+    if (resposta.status === 404) throw new ErroDownload('nao-publicada');
     if (!resposta.ok) throw new ErroDownload('erro');
     return await resposta.text();
   } catch (e) {
