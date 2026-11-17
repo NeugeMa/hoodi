@@ -8,6 +8,7 @@ import { CartaoPermissao } from '@/components/permissoes/cartao-permissao';
 import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
 import { useAcompanhamento } from '@/features/alerta/acompanhamento-context';
+import { estadoSegundoPlano } from '@/features/alerta/segundo-plano';
 import {
   estadoBluetooth,
   estadoNotificacoes,
@@ -25,7 +26,8 @@ const NO_NAVEGADOR = Platform.OS === 'web';
  * Negar não trava o app: a tela diz o que deixa de funcionar e qual canal para de avisar.
  */
 export default function PermissoesScreen() {
-  const { permissao, pedirLocalizacao } = useAcompanhamento();
+  const { permissao, pedirLocalizacao, segundoPlano, ativarSegundoPlano, desativarSegundoPlano } = useAcompanhamento();
+  const [permissaoSegundoPlano, setPermissaoSegundoPlano] = useState<EstadoPermissao>('nao-pedida');
   const [notificacoes, setNotificacoes] = useState<EstadoPermissao>('nao-pedida');
   const [bluetooth, setBluetooth] = useState<EstadoPermissao>('nao-pedida');
 
@@ -34,11 +36,16 @@ export default function PermissoesScreen() {
     useCallback(() => {
       estadoNotificacoes().then(setNotificacoes);
       estadoBluetooth().then(setBluetooth);
+      estadoSegundoPlano().then(setPermissaoSegundoPlano);
     }, []),
   );
 
   const localizacao: EstadoPermissao =
     permissao === 'concedida' ? 'permitida' : permissao === 'negada' ? 'negada' : 'nao-pedida';
+
+  // Ligado só vale com a permissão do sistema ainda dada (a pessoa pode retirá-la nas configurações).
+  const segundoPlanoAtivo: EstadoPermissao =
+    permissaoSegundoPlano === 'permitida' && segundoPlano ? 'permitida' : permissaoSegundoPlano === 'permitida' ? 'nao-pedida' : permissaoSegundoPlano;
 
   function acaoPara(estado: EstadoPermissao, pedir: () => void) {
     if (estado === 'nao-pedida') return { rotulo: 'Permitir', onPress: pedir };
@@ -65,13 +72,37 @@ export default function PermissoesScreen() {
       <CartaoPermissao
         icone={MapPin}
         titulo="Localização"
-        motivo="Para saber o risco registrado onde você está, comparar rotas e avisar quando o risco sobe. A posição fica só no celular."
+        motivo="Para saber o risco registrado onde você está e avisar quando o risco sobe, com o app aberto. A posição fica só no celular."
         estado={localizacao}
-        seNegar="Sem a localização, a comparação de rotas e o alerta não funcionam. Você ainda pode ver o mapa."
+        seNegar="Sem a localização, o alerta não funciona. Você ainda pode ver o mapa."
         acao={acaoPara(localizacao, async () => {
           await pedirLocalizacao();
           AccessibilityInfo.announceForAccessibility('Pedido de localização respondido.');
         })}
+      />
+      <CartaoPermissao
+        icone={MapPin}
+        titulo="Localização em segundo plano"
+        motivo="Para avisar quando o risco sobe com a tela apagada ou o app fechado, sem tirar o celular do bolso. Usa mais bateria e mostra um aviso fixo enquanto acompanha. A posição continua só no celular."
+        estado={localizacao === 'permitida' ? segundoPlanoAtivo : 'nao-pedida'}
+        seNegar="Sem o segundo plano, o alerta só funciona com o app aberto na tela."
+        seIndisponivel="O segundo plano só funciona no app instalado (development build), não no Expo Go nem no navegador."
+        acao={
+          localizacao !== 'permitida'
+            ? undefined
+            : segundoPlanoAtivo === 'permitida'
+              ? {
+                  rotulo: 'Desligar',
+                  onPress: async () => {
+                    await desativarSegundoPlano();
+                    AccessibilityInfo.announceForAccessibility('Segundo plano desligado.');
+                  },
+                }
+              : acaoPara(segundoPlanoAtivo, async () => {
+                  setPermissaoSegundoPlano(await ativarSegundoPlano());
+                  AccessibilityInfo.announceForAccessibility('Pedido de localização em segundo plano respondido.');
+                })
+        }
       />
       <CartaoPermissao
         icone={Bell}

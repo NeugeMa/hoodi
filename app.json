@@ -49,7 +49,12 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "O Hoodi usa sua localização, só no aparelho, para dizer o risco registrado onde você está e avisar quando ele sobe."
+          "locationWhenInUsePermission": "O Hoodi usa sua localização, só no aparelho, para dizer o risco registrado onde você está e avisar quando ele sobe.",
+          "locationAlwaysAndWhenInUsePermission": "O Hoodi usa sua localização, só no aparelho, para avisar quando o risco sobe mesmo com a tela apagada ou o app em segundo plano.",
+          "locationAlwaysPermission": "O Hoodi usa sua localização, só no aparelho, para avisar quando o risco sobe mesmo com a tela apagada ou o app em segundo plano.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       "expo-notifications",
