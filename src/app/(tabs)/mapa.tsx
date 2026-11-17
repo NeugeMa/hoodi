@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -11,8 +11,9 @@ import { Aviso } from '@/components/ui/aviso';
 import { Texto } from '@/components/ui/texto';
 import type { FalhaDownload } from '@/features/grade/grade-api';
 import { useGrade } from '@/features/grade/grade-context';
-import { diaMes, diaMesAno, diaPorExtenso } from '@/features/grade/datas';
+import { diaMes, diaMesAno, diaPorExtenso, periodoMeses } from '@/features/grade/datas';
 import { CENTRO_PERIMETRO, faixaAtual, nivelNaFaixa } from '@/features/grade/recorte';
+import { preencherReferencia } from '@/features/grade/referencia';
 import type { CelulaGrade } from '@/features/grade/tipos';
 import { explicacaoDaPosicao } from '@/features/trajeto/textos';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
@@ -28,6 +29,10 @@ const SEM_GRADE: Record<FalhaDownload, { titulo: string; texto: string }> = {
   'sem-servidor': {
     titulo: 'Dados de risco indisponíveis',
     texto: 'O servidor de dados ainda não está configurado neste app.',
+  },
+  'nao-publicada': {
+    titulo: 'Dados de risco ainda não publicados',
+    texto: 'O servidor do Hoodi está no ar, mas ainda não tem a grade de risco. O mapa mostra as células assim que ela for publicada.',
   },
   'checksum-invalido': {
     titulo: 'Dados recusados',
@@ -51,6 +56,21 @@ export default function MapaScreen() {
   const { posicao, trajeto } = useTrajeto();
   const [selecionada, setSelecionada] = useState<CelulaGrade | null>(null);
   const [alturaPainel, setAlturaPainel] = useState(0);
+  // Nome da rua da célula tocada (a grade da API só traz o código H3: o celular procura).
+  const [nomeAchado, setNomeAchado] = useState<{ id: string; nome: string } | null>(null);
+  const referenciaSelecionada =
+    selecionada?.referencia || (nomeAchado && nomeAchado.id === selecionada?.id ? nomeAchado.nome : '');
+
+  useEffect(() => {
+    if (!selecionada || selecionada.referencia) return;
+    let ativo = true;
+    preencherReferencia(selecionada).then((nome) => {
+      if (ativo && nome) setNomeAchado({ id: selecionada.id, nome });
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [selecionada]);
 
   const faixa = grade ? faixaAtual(grade.faixas) : null;
   const topo = insets.top + espaco[3];
@@ -104,11 +124,11 @@ export default function MapaScreen() {
           )
         ) : selecionada ? (
           <DetalheCelula
-            referencia={selecionada.referencia}
+            referencia={referenciaSelecionada || 'Área selecionada'}
             nivel={nivelNaFaixa(selecionada, faixa)}
             faixa={faixa?.rotulo ?? '—'}
             fonte={grade.fonte}
-            dadosDe={diaMesAno(grade.publicadoEm)}
+            dadosDe={grade.periodo ? periodoMeses(grade.periodo.inicio, grade.periodo.fim) : diaMesAno(grade.publicadoEm)}
             onFechar={() => setSelecionada(null)}
           />
         ) : (
@@ -120,7 +140,9 @@ export default function MapaScreen() {
             />
             <LegendaMapa />
             <Texto variante="legenda">
-              Dados de {diaMes(grade.publicadoEm)}
+              {grade.periodo
+                ? `Registros de ${periodoMeses(grade.periodo.inicio, grade.periodo.fim)}`
+                : `Dados de ${diaMes(grade.publicadoEm)}`}
               {faixa ? `, faixa de ${faixa.rotulo}` : ''}. Toque numa área colorida para ver o detalhe.
             </Texto>
           </>

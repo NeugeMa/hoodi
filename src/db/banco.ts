@@ -42,6 +42,15 @@ const MIGRACOES = [
    );`,
 ];
 
+/** A migração só cria tabelas ou índices que faltam (pode rodar de novo sem mudar nada). */
+function soCriaSeFaltar(sql: string) {
+  return sql
+    .split(';')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .every((s) => /^CREATE (TABLE|INDEX) IF NOT EXISTS /i.test(s));
+}
+
 let banco: Promise<SQLiteDatabase> | null = null;
 
 export function abrirBanco() {
@@ -55,6 +64,9 @@ export function abrirBanco() {
         await db.execAsync(`PRAGMA user_version = ${v + 1}`);
       });
     }
+    // Banco que já diz estar na versão certa mas perdeu uma tabela (ex.: sobra de outra instalação
+    // no Expo Go): recria o que faltar. Só repete as migrações feitas apenas de CREATE ... IF NOT EXISTS.
+    await db.execAsync(MIGRACOES.filter(soCriaSeFaltar).join('\n'));
     return db;
   })();
   return banco;

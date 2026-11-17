@@ -2,7 +2,7 @@ import { celulaEm, nivelNaFaixa } from '@/features/grade/recorte';
 import type { CelulaGrade, Coordenada, FaixaHoraria, GradeRisco } from '@/features/grade/tipos';
 import type { NivelRisco } from '@/features/risco/nivel';
 
-import { distanciaAteRetanguloM, distanciaM } from './geo';
+import { distanciaAteCelulaM, distanciaM } from './geo';
 
 /**
  * Motor do alerta de risco (F07), em lógica pura: recebe a posição e o estado anterior
@@ -74,14 +74,14 @@ export function montarAlerta(nivel: 'medio' | 'alto', trecho: string): Alerta {
       nivel,
       trecho,
       titulo: 'Risco alto nesta área',
-      texto: `${trecho}. Mantenha o celular guardado e siga por ruas movimentadas.`,
+      texto: `${trecho ? `${trecho}. ` : ''}Mantenha o celular guardado e siga por ruas movimentadas.`,
     };
   }
   return {
     nivel,
     trecho,
     titulo: 'Risco médio nesta área',
-    texto: `${trecho}. Seu relógio e o Hoodi Pet avisam se o risco subir.`,
+    texto: `${trecho ? `${trecho}. ` : ''}Seu relógio e o Hoodi Pet avisam se o risco subir.`,
   };
 }
 
@@ -91,7 +91,7 @@ function celulaComMargem(grade: GradeRisco, p: Coordenada, anteriorId: string | 
   if (!anteriorId || nova?.id === anteriorId) return nova;
   const anterior = grade.celulas.find((c) => c.id === anteriorId);
   // Ainda a menos de 30 m da célula anterior: continua nela, sem alertar de novo.
-  if (anterior && distanciaAteRetanguloM(p, anterior.limites) < MARGEM_DIVISA_M) return anterior;
+  if (anterior && distanciaAteCelulaM(p, anterior) < MARGEM_DIVISA_M) return anterior;
   return nova;
 }
 
@@ -170,7 +170,7 @@ export function proximoTrechoDeRisco(
   });
 
   let percorrido = 0;
-  let medio: { rua: string; nivel: 'medio'; distanciaMetros: number } | null = null;
+  let medio: ProximoTrecho | null = null;
   const atual = celulaEm(grade, posicao)?.id;
   for (let i = inicio + 1; i < caminho.length; i++) {
     percorrido += distanciaM(caminho[i - 1], caminho[i]);
@@ -178,13 +178,19 @@ export function proximoTrechoDeRisco(
     if (!c || c.id === atual) continue;
     const n = nivelNaFaixa(c, faixa);
     const distanciaMetros = Math.round(percorrido / 10) * 10;
-    if (n === 'alto') return { rua: c.referencia, nivel: 'alto', distanciaMetros };
-    if (n === 'medio' && !medio) medio = { rua: c.referencia, nivel: 'medio', distanciaMetros };
+    if (n === 'alto') return { rua: c.referencia, nivel: 'alto', distanciaMetros, celulaId: c.id };
+    if (n === 'medio' && !medio) medio = { rua: c.referencia, nivel: 'medio', distanciaMetros, celulaId: c.id };
   }
   return medio;
 }
 
-export type ProximoTrecho = { rua: string; nivel: 'medio' | 'alto'; distanciaMetros: number };
+export type ProximoTrecho = {
+  rua: string;
+  nivel: 'medio' | 'alto';
+  distanciaMetros: number;
+  /** Célula do trecho: um aviso por célula, mesmo quando a grade não traz o nome da rua. */
+  celulaId?: string;
+};
 
 /** Aviso antecipado: o quê + onde + o que fazer, com a distância em metros (design system v3). */
 export function montarAvisoAntecipado(trecho: ProximoTrecho): Alerta {
@@ -195,7 +201,7 @@ export function montarAvisoAntecipado(trecho: ProximoTrecho): Alerta {
     nivel: trecho.nivel,
     trecho: trecho.rua,
     titulo: `${nome} à frente`,
-    texto: `${trecho.rua}, em ${trecho.distanciaMetros} m. ${fazer}`,
+    texto: `${trecho.rua ? `${trecho.rua}, em` : 'Em'} ${trecho.distanciaMetros} m. ${fazer}`,
     antecipado: true,
   };
 }
@@ -214,7 +220,7 @@ export function avaliarAvisoAntecipado(
   if (!proximo || proximo.distanciaMetros <= 0 || proximo.distanciaMetros > antecedenciaM) return null;
   const atual = nivelAtual && nivelAtual !== 'sem-dado' ? ORDEM[nivelAtual] : -1;
   if (ORDEM[proximo.nivel] <= atual) return null;
-  const chave = `${proximo.rua}|${proximo.nivel}`;
+  const chave = `${proximo.celulaId ?? proximo.rua}|${proximo.nivel}`;
   if (avisados.has(chave)) return null;
   avisados.add(chave);
   return montarAvisoAntecipado(proximo);

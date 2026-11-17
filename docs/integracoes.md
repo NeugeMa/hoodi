@@ -6,15 +6,87 @@ API .NET do Abner, modo demonstração, grade de risco, Bluetooth com o Hoodi Pe
 
 ## Rodar com a API local
 
-1. No PC (repositório da API, .NET 10):
-   ```bash
-   dotnet run --project Hoodi.Api -- --urls http://0.0.0.0:5000 --environment Development --Https:RedirectEnabled=false
-   ```
-   **O `--Https:RedirectEnabled=false` é obrigatório para o celular:** sem ele, a API responde 307 e manda tudo para `https://…:443`, e o app mostra "Não foi possível falar com o Hoodi". O `--environment Development` deixa a API subir sem as chaves de produção. Documentação em `http://IP-DO-PC:5000/scalar`.
-2. Na raiz deste app, crie o `.env` com `EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000` (o IP da máquina na rede, não `localhost`) e reinicie o `npm start`.
-3. O e-mail do cadastro cai no **Mailpit** (SMTP em `127.0.0.1:1025`): `http://localhost:8025` no PC.
-4. Partes da API que ainda não existem (grade, rotas, dispositivos) continuam no mock: `npx @stoplight/prism-cli mock contracts/openapi.yaml`.
+Para testar com **conta de verdade** (criar conta, confirmar pelo e-mail, entrar e continuar logado), duas coisas rodam no PC: a **API** e o **Mailpit** (recebe os e-mails). O app (este repositório) roda à parte, com o `npm start`. Para só ver o app funcionando, sem nada disso, use o [modo demonstração](#modo-demonstração-no-navegador-vídeo-e-prints).
 
+**Pré-requisitos:** [.NET 10 SDK](https://dotnet.microsoft.com/download), [Node.js](https://nodejs.org/) 20+ e o Mailpit (passo 2). Celular e PC na mesma rede Wi-Fi.
+
+### 1. Baixar e subir a API
+
+A API fica no repositório do Abner: **https://github.com/APB-Abner/Hoodi**
+
+```bash
+git clone https://github.com/APB-Abner/Hoodi.git
+cd Hoodi
+dotnet run --project Hoodi.Api -- --urls http://0.0.0.0:5000 --environment Development --Https:RedirectEnabled=false
+```
+
+- **O `--Https:RedirectEnabled=false` é obrigatório para o celular:** sem ele, a API responde 307 e manda tudo para `https://…:443`, e o app mostra "Não foi possível falar com o Hoodi".
+- O `--environment Development` deixa a API subir sem as chaves de produção. Nesse modo, as chaves de login mudam toda vez que a API sobe: se ela reiniciar, é preciso entrar de novo no app.
+- Documentação da API em `http://IP-DO-PC:5000/scalar`.
+
+### 2. Receber o e-mail do cadastro (Mailpit)
+
+Em desenvolvimento, **a API não manda e-mail de verdade** (nada chega no Gmail). Ela entrega o e-mail a um servidor de e-mail de teste no próprio PC, na porta `1025`. O **Mailpit** faz esse papel e mostra os e-mails numa página.
+
+Com Docker:
+
+```bash
+docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
+```
+
+Sem Docker: baixe o executável em [github.com/axllent/mailpit/releases](https://github.com/axllent/mailpit/releases) e rode `mailpit`.
+
+Os e-mails aparecem em **http://localhost:8025**, no PC.
+
+### 3. Publicar a grade de risco (uma vez)
+
+A API sobe **sem grade**: até alguém publicar, o Mapa mostra "Dados de risco ainda não publicados". Só uma conta de **operador** publica:
+
+1. Crie uma conta para isso (pelo app ou pela API) e pegue o id dela (o `sub` do token de login).
+2. Suba a API com esse id em `Risk__ImporterUserIds__0` (variável de ambiente).
+3. Entre com essa conta e publique os arquivos do ML que estão no repositório da API:
+
+```bash
+curl --fail-with-body "http://localhost:5000/v1/admin/risco/importar" \
+  -H "Authorization: Bearer TOKEN-DO-OPERADOR" \
+  -F 'versao=nando-v2-2026-jan-set' \
+  -F 'csv=@data/risk/v2/risco_h3_faixa_v2.csv' \
+  -F 'sha256=@data/risk/v2/risco_h3_faixa_v2.csv.sha256' \
+  -F 'manifest=@data/risk/v2/manifest.json' \
+  -F 'fixture=@data/risk/v2/fixture_v2.json'
+```
+
+Resposta 201: publicada. A grade fica salva no banco da API; não precisa repetir. Detalhes em `docs/risk-snapshot-v2-integration.md`, no repositório da API.
+
+**Rotas:** o Comparar rotas usa o provedor HeiGIT pela API, com a chave em `Rotas__ApiKey` (variável de ambiente, nunca no repositório nem no app). Sem a chave, a API responde "indisponível" e o app diz que não deu para comparar agora. Detalhes em `docs/routes-v0.6.md`, no repositório da API.
+
+### 4. Apontar o app para o PC
+
+Na raiz **deste** repositório, crie o arquivo `.env` com o IP do PC na rede (no Windows, `ipconfig`). Não use `localhost`: no celular, `localhost` é o próprio celular.
+
+```
+EXPO_PUBLIC_API_URL=http://IP-DO-PC:5000
+```
+
+Depois rode (ou reinicie) o `npm start` e abra o app no celular pelo Expo Go. Se o Windows perguntar, permita o acesso do .NET e do Node na rede privada.
+
+### 5. Criar a conta e confirmar pelo link
+
+1. No app, toque em **Criar conta**, preencha e envie. O app mostra **Confira seu e-mail**.
+2. No PC, abra **http://localhost:8025** e abra o e-mail "Confirme seu e-mail".
+3. Copie o link inteiro, que começa com `hoodi://confirmar#token=`. Ele vale por **30 minutos**.
+4. Mande o link para o celular (por exemplo, pelo WhatsApp para você mesma) e cole no campo **Link do e-mail** da tela Confira seu e-mail.
+5. Pronto: a conta é confirmada e o app já entra. Nas próximas vezes, é só **Entrar** com o e-mail e a senha.
+
+O mesmo vale para **Esqueci a senha** (link `hoodi://redefinir-senha#token=`) e para os **convites de contato** (link `hoodi://convite#codigo=`).
+
+### O que vem da API
+
+| Parte | Situação |
+|---|---|
+| Contas, contatos, convites, pedido de ajuda, excluir conta | **Na API** |
+| Grade de risco do Mapa (`/v1/risco/versao-atual` e `/v1/risco/grade`) | **Na API**, depois de publicada (passo 3). Pública: não precisa de login |
+| Comparar rotas (`/v1/rotas/avaliar`) | **Na API**, com o provedor HeiGIT. Precisa da chave do provedor na API |
 
 ## Modo demonstração no navegador (vídeo e prints)
 
@@ -41,36 +113,41 @@ Roteiro sugerido para o vídeo: Permissões → Configurar o relógio → Iníci
 Fora do modo demonstração nada disso existe: o app usa a API, o GPS e o Bluetooth de verdade.
 
 
-## Grade de risco: banco local e download
+## Grade de risco: download e banco local
 
-- **Banco:** a última grade válida fica no **SQLite** do celular, tabela `grade_risco` ([`grade-repo.ts`](../src/features/grade/grade-repo.ts)); veja "Banco de dados local" abaixo.
-- **Download:** [`grade-api.ts`](../src/features/grade/grade-api.ts) busca `GET /grade/manifesto.json` e, se a versão mudou, `GET /grade/{versao}.json`. O app só usa o arquivo se o SHA-256 do texto bater com o do manifesto.
-- **Endereço da API:** crie um arquivo `.env` na raiz com `EXPO_PUBLIC_API_URL=http://SEU-IP:PORTA` (no celular, use o IP da máquina, não `localhost`).
+A grade vem do ML (Nando), publicada pela API (contrato v0.6, snapshot H3 v2): **279 células H3** (resolução 9, hexágonos de cerca de 170 m) em volta da FIAP Paulista, com o nível em **5 faixas de horário**, a partir dos registros da SSP-SP de jan. a set. de 2026.
 
-Formato esperado (proposta para o contrato v0.6, a confirmar com o Abner e o Nando):
+1. **Versão:** [`grade-api.ts`](../src/features/grade/grade-api.ts) busca `GET /v1/risco/versao-atual` (versão, SHA-256 do CSV e manifesto do produtor).
+2. **CSV:** se a versão mudou, baixa `GET /v1/risco/grade` e confere o **SHA-256 dos bytes** com o da versão (F03 CA8). Não bateu: busca a versão de novo e tenta mais uma vez (uma publicação pode ter saído no meio); continuou errado, recusa e fica com a grade anterior.
+3. **Conversão:** [`grade-h3.ts`](../src/features/grade/grade-h3.ts) lê o CSV e calcula o contorno de cada hexágono com o `h3-js` (no próprio celular).
+4. **Banco:** a última grade válida fica no **SQLite**, tabela `grade_risco` ([`grade-repo.ts`](../src/features/grade/grade-repo.ts)): o Mapa e o alerta funcionam sem internet (F03 CA6).
 
-```json
-// GET /grade/manifesto.json
-{ "versao": "2026-11-03", "sha256": "<hex do arquivo da versão>" }
+| No CSV da API | No app |
+|---|---|
+| `com_dado`, nível 0 | Área tranquila |
+| `com_dado`, nível 1 | Risco médio |
+| `com_dado`, nível 2 | Risco alto |
+| `com_dado`, nível 3 | **Risco alto** (o nome do nível 3 ainda não foi decidido pela equipe) |
+| `sem_dado` (0 a 2 registros, suprimidos por privacidade) | Sem dado, **nunca** área tranquila |
+| Fora das 279 células | Sem dado (fora da área coberta) |
 
-// GET /grade/2026-11-03.json
-{
-  "versao": "2026-11-03",
-  "publicadoEm": "2026-11-03T12:00:00Z",
-  "fonte": "SSP-SP",
-  "faixas": [{ "id": "noite", "rotulo": "22h–2h", "inicio": 22, "fim": 2 }],
-  "celulas": [
-    {
-      "id": "6gycfqr",
-      "limites": { "norte": -23.5596, "sul": -23.5611, "oeste": -46.6572, "leste": -46.6557 },
-      "referencia": "Rua Augusta",
-      "niveis": { "noite": "alto" }
-    }
-  ]
-}
-```
+| Faixa | Horário |
+|---|---|
+| 0 madrugada | 0h–6h |
+| 1 manhã | 6h–12h |
+| 2 tarde | 12h–18h |
+| 3 noite cedo | 18h–21h |
+| 4 noite | 21h–24h |
 
-`limites` (latitude e longitude da célula) deixam o app desenhar a célula no mapa sem depender da escolha entre geohash e H3. O trajeto (F04) precisa mandar os pontos do caminho (`caminho: [{ latitude, longitude }]`) para o Mapa pintar cada trecho. Faixa ausente numa célula vale como **Sem dado**.
+- **Onde a pessoa está:** o app acha o hexágono que contém a posição; a margem de 30 m na divisa (F07 CA4) é medida até a borda do hexágono.
+- **Nome da rua:** a grade só traz o código H3. Para os textos ("Onde você está agora", alertas, detalhe da célula), o **celular** converte o centro da célula em rua com o geocodificador do sistema, uma vez por célula ([`referencia.ts`](../src/features/grade/referencia.ts)). Até chegar (ou sem internet), os textos aparecem sem a rua.
+- **"Dados de":** o Mapa mostra o período dos registros ("Registros de jan. a set. 2026"), não a data de publicação.
+
+## Comparar rotas: formato da API
+
+`POST /v1/rotas/avaliar` (com login), corpo `{ origem, destino, saidaEm }`. A API busca até 3 rotas a pé no HeiGIT, pontua cada uma na grade H3 da faixa da saída e devolve, por rota, `geometria` (lista de pontos), `duracaoSegundos`, `posicao` (1 = menor risco acumulado) e `pontuacao` (`acumulada`, `coberturaPercentual`, `percentualSemDado`, `percentualForaCobertura`, `dadoInsuficiente`...). [`comparar.ts`](../src/features/rotas/comparar.ts) aplica a regra dos 70%: se alguma rota tem dado insuficiente ou mais de 30% do caminho sem dado (sem dado + fora da grade), o app não indica a de menor risco.
+
+Recusas com texto próprio no app ([`rotas-api.ts`](../src/features/rotas/rotas-api.ts)): `ROTA_EXTENSA` (destino longe demais a pé), `ROTA_INVALIDA` e `SAIDA_FORA_JANELA` (horário do celular errado). A API aceita 15 comparações por minuto por conta.
 
 
 ## Protocolo BLE com o Hoodi Pet (v1, o do firmware)

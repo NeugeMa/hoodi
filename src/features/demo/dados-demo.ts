@@ -109,31 +109,6 @@ export const CAMINHO_DESVIO: Coordenada[] = [
   ESTACAO_LIBERDADE,
 ];
 
-/** Codifica um caminho no formato "encoded polyline" (o mesmo que a API devolve). */
-export function codificarPolyline(pontos: Coordenada[], precisao = 5) {
-  const fator = 10 ** precisao;
-  let saida = '';
-  let latAnt = 0;
-  let lngAnt = 0;
-  const valor = (v: number) => {
-    let n = v < 0 ? ~(v << 1) : v << 1;
-    let s = '';
-    while (n >= 0x20) {
-      s += String.fromCharCode((0x20 | (n & 0x1f)) + 63);
-      n >>= 5;
-    }
-    return s + String.fromCharCode(n + 63);
-  };
-  for (const p of pontos) {
-    const lat = Math.round(p.latitude * fator);
-    const lng = Math.round(p.longitude * fator);
-    saida += valor(lat - latAnt) + valor(lng - lngAnt);
-    latAnt = lat;
-    lngAnt = lng;
-  }
-  return saida;
-}
-
 /** Distância aproximada em metros de um caminho (para os minutos a pé). */
 export function metrosDoCaminho(pontos: Coordenada[]) {
   let total = 0;

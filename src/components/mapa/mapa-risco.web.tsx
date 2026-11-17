@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
-import Svg, { Circle, Defs, Line, Pattern, Polyline, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, Pattern, Polygon, Polyline, Rect } from 'react-native-svg';
 
 import { MapTrifold } from '@/components/icones';
 import { Texto } from '@/components/ui/texto';
-import { nivelNaFaixa, trechosColoridos } from '@/features/grade/recorte';
+import { contem, nivelNaFaixa, trechosColoridos } from '@/features/grade/recorte';
 import type { Coordenada } from '@/features/grade/tipos';
 import { NIVEL, type NivelRisco } from '@/features/risco/nivel';
 import { espaco } from '@/theme/tokens';
@@ -83,9 +83,7 @@ export function MapaRisco({
     const vy = (locationY - (area.altura - H * escala) / 2) / escala;
     const lng = oeste + (vx - folga) / (cosLat * ESCALA);
     const lat = norte - (vy - folga) / ESCALA;
-    const celula = grade!.celulas.find(
-      (c) => lat <= c.limites.norte && lat >= c.limites.sul && lng <= c.limites.leste && lng >= c.limites.oeste,
-    );
+    const celula = grade!.celulas.find((c) => contem(c, { latitude: lat, longitude: lng }));
     onSelecionar(celula ?? null);
   }
 
@@ -116,21 +114,25 @@ export function MapaRisco({
           const nivel = nivelNaFaixa(celula, faixa);
           const cor = corDoNivel(nivel);
           const selecionada = celula.id === selecionadaId;
-          const l = celula.limites;
-          const props = {
-            x: x(l.oeste) + 1,
-            y: y(l.norte) + 1,
-            width: (l.leste - l.oeste) * cosLat * ESCALA - 2,
-            height: (l.norte - l.sul) * ESCALA - 2,
-            rx: 6,
+          const visual = {
+            fill: nivel === 'sem-dado' ? 'url(#hachura)' : comAlfa(cor, 0.32),
+            stroke: selecionada ? cores.foco : comAlfa(cor, 0.6),
+            strokeWidth: selecionada ? 5 : 1.5,
           };
+          // Grade da API: hexágono H3. Demonstração: retângulo com cantos arredondados.
+          if (celula.contorno) {
+            return <Polygon key={celula.id} points={celula.contorno.map(ponto).join(' ')} {...visual} />;
+          }
+          const l = celula.limites;
           return (
             <Rect
               key={celula.id}
-              {...props}
-              fill={nivel === 'sem-dado' ? 'url(#hachura)' : comAlfa(cor, 0.32)}
-              stroke={selecionada ? cores.foco : comAlfa(cor, 0.6)}
-              strokeWidth={selecionada ? 5 : 1.5}
+              x={x(l.oeste) + 1}
+              y={y(l.norte) + 1}
+              width={(l.leste - l.oeste) * cosLat * ESCALA - 2}
+              height={(l.norte - l.sul) * ESCALA - 2}
+              rx={6}
+              {...visual}
             />
           );
         })}
