@@ -66,6 +66,8 @@
 
 ## Vídeo
 
+**Lançamento (90 s):** [assistir ao vídeo](docs/video/hoodi-lancamento.mp4)
+
 **App rodando (até 3 min):** _link a adicionar_
 
 ## Para avaliar
