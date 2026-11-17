@@ -1,4 +1,4 @@
-import { CAMINHO_DESVIO, CAMINHO_DIRETO, codificarPolyline, metrosDoCaminho } from './dados-demo';
+import { CAMINHO_DESVIO, CAMINHO_DIRETO, metrosDoCaminho } from './dados-demo';
 
 /**
  * API SIMULADA do modo demonstração. Responde no mesmo formato da API do Abner (v0.5/v0.6),
@@ -102,28 +102,37 @@ function resumo(p: Pedido) {
   };
 }
 
+/** Rotas no formato do contrato v0.6 (POST /v1/rotas/avaliar). */
 function rotas() {
-  const rota = (rotaId: string, caminho: typeof CAMINHO_DIRETO, exposicaoRelativa: number, posicao: number) => {
-    const distanciaMetros = metrosDoCaminho(caminho);
+  const rota = (rotaId: string, caminho: typeof CAMINHO_DIRETO, acumulada: number, posicao: number) => {
+    const metrosTotal = metrosDoCaminho(caminho);
     return {
       rotaId,
-      distanciaMetros,
-      duracaoSegundos: Math.round(distanciaMetros / 1.3), // ~ 4,7 km/h
-      exposicaoRelativa,
-      percentualSemEstimativa: 0,
-      geometriaCodificada: codificarPolyline(caminho),
+      duracaoSegundos: Math.round(metrosTotal / 1.3), // ~ 4,7 km/h
+      geometria: caminho,
       posicao,
+      faixa: 3,
+      pontuacao: {
+        acumulada,
+        indicePorKm: acumulada / (metrosTotal / 1000),
+        metrosTotal,
+        metrosComDado: metrosTotal,
+        percentualSemDado: 0,
+        percentualForaCobertura: 0,
+        coberturaPercentual: 100,
+        dadoInsuficiente: false,
+      },
     };
   };
   return {
     situacao: 'concluida',
     motivo: null,
     versaoGrade: 'demonstracao',
-    coberturaMinimaPercentual: 70,
-    rotas: [rota('direta', CAMINHO_DIRETO, 1420, 2), rota('desvio', CAMINHO_DESVIO, 980, 1)],
-    unidadeExposicao: 'metro_risco_relativo',
-    metodoTrechoDesconhecido: 'extrapolacao_media_trechos_conhecidos',
-    empateTecnicoPercentual: 5,
+    fonteRisco: 'PontuacaoMensal',
+    semDado: 'Desconhecido',
+    unidadeIndice: 'pontos_por_mes_hora_x_km',
+    aviso: 'Dados simulados da demonstração.',
+    rotas: [rota('direta', CAMINHO_DIRETO, 1.42, 2), rota('desvio', CAMINHO_DESVIO, 0.98, 1)],
   };
 }
 

@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { gradeDemo } from '@/features/demo/dados-demo';
 import { MODO_DEMO } from '@/features/demo/modo-demo';
 
-import { baixarGrade, buscarManifesto, ErroDownload, type FalhaDownload } from './grade-api';
+import { baixarGrade, buscarVersao, ErroDownload, type FalhaDownload } from './grade-api';
 import { lerGradeSalva, salvarGrade } from './grade-repo';
 import type { GradeSalva } from './tipos';
 
@@ -14,7 +14,7 @@ type GradeContexto = {
   carregando: boolean;
   /** Motivo da última tentativa de atualização ter falhado (nulo se deu certo). */
   falha: FalhaDownload | null;
-  /** Busca o manifesto e baixa a versão nova, se houver (F03 CA1). */
+  /** Busca a versão publicada e baixa a nova, se houver (F03 CA1). */
   atualizar: () => Promise<void>;
 };
 
@@ -22,7 +22,7 @@ type Resultado = { grade: GradeSalva | null; falha: FalhaDownload | null };
 
 /**
  * 1. lê a grade salva no SQLite (funciona sem internet, F03 CA6);
- * 2. busca o manifesto; se a versão mudou, baixa e confere o SHA-256;
+ * 2. busca a versão publicada; se mudou, baixa o CSV e confere o SHA-256;
  * 3. checksum inválido: recusa e continua com a versão anterior (F03 CA8).
  */
 async function sincronizar(): Promise<Resultado> {
@@ -31,9 +31,11 @@ async function sincronizar(): Promise<Resultado> {
   let grade: GradeSalva | null = null;
   try {
     grade = await lerGradeSalva();
-    const manifesto = await buscarManifesto();
-    if (grade?.versao !== manifesto.versao) {
-      grade = await salvarGrade(await baixarGrade(manifesto));
+    const versao = await buscarVersao();
+    // Grade salva sem contorno = formato antigo (antes do H3): baixa de novo.
+    const antiga = grade !== null && grade.celulas.some((c) => !c.contorno);
+    if (grade?.versao !== versao.versao || antiga) {
+      grade = await salvarGrade(await baixarGrade(versao));
     }
     return { grade, falha: null };
   } catch (e) {

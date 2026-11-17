@@ -1,11 +1,10 @@
 // Testes das regras do F02/F04/F08 que não dependem de tela: aviso antecipado, horário dos alertas
-// e comparação de rotas. Rodam com `npm run test:pet` (Node 22+, sem dependências novas).
+// e comparação de rotas (formato do contrato v0.6). Rodam com `npm run test:pet` (Node 22+, sem dependências novas).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { avaliarAvisoAntecipado } from '../src/features/alerta/motor.ts';
 import { horarioPermite, lerPreferenciasDeTexto, PREFERENCIAS_PADRAO } from '../src/features/preferencias/alertas.ts';
 import { compararRotas } from '../src/features/rotas/comparar.ts';
-import { decodificarPolyline } from '../src/features/rotas/polyline.ts';
 
 const trecho = (rua, nivel, distanciaMetros) => ({ rua, nivel, distanciaMetros });
 
@@ -47,27 +46,31 @@ test('preferências: lê o salvo e completa o que faltar (inclui o "vibração" 
   assert.equal(lerPreferenciasDeTexto('{quebrado').antecedencia, 300);
 });
 
-test('polyline: decodifica o exemplo do Google', () => {
-  assert.deepEqual(decodificarPolyline('_p~iF~ps|U_ulLnnqC_mqNvxq`@'), [
-    { latitude: 38.5, longitude: -120.2 },
-    { latitude: 40.7, longitude: -120.95 },
-    { latitude: 43.252, longitude: -126.453 },
-  ]);
-});
-
-const rota = (rotaId, duracaoSegundos, exposicaoRelativa, percentualSemEstimativa, posicao) => ({
+// Rota no formato do contrato v0.6. acumulada null = dado insuficiente (menos de 70% de cobertura).
+const rota = (rotaId, duracaoSegundos, acumulada, semDadoPct, posicao) => ({
   rotaId,
-  distanciaMetros: 900,
   duracaoSegundos,
-  exposicaoRelativa,
-  percentualSemEstimativa,
-  geometriaCodificada: 'vxvnCfxs{GnKnK~W~W',
+  geometria: [
+    { latitude: -23.5641, longitude: -46.6527 },
+    { latitude: -23.5655, longitude: -46.6510 },
+  ],
   posicao,
+  faixa: 3,
+  pontuacao: {
+    acumulada: acumulada ?? 0,
+    indicePorKm: acumulada === null ? null : acumulada / 0.9,
+    metrosTotal: 900,
+    metrosComDado: 900 * (1 - semDadoPct / 100),
+    percentualSemDado: semDadoPct,
+    percentualForaCobertura: 0,
+    coberturaPercentual: 100 - semDadoPct,
+    dadoInsuficiente: acumulada === null || semDadoPct > 30,
+  },
 });
 const resultado = (situacao, motivo, rotas) => ({ situacao, motivo, versaoGrade: 'v', rotas });
 
 test('comparar rotas (F04 CA2): com 70% ou mais de cobertura compara e mostra quanto está sem dado', () => {
-  // O exemplo do mock da API: r2 tem 10% sem estimativa.
+  // r2 tem 10% do caminho sem dado.
   const r = compararRotas(resultado('concluida', null, [rota('r1', 720, 1020, 0, 1), rota('r2', 880, 1300, 10, 2)]), null, null);
   assert.equal(r.tipo, 'comparada');
   assert.equal(r.menorRisco.id, 'r1');

@@ -23,18 +23,37 @@ export function nivelNaFaixa(celula: CelulaGrade, faixa: FaixaHoraria | null): N
   return celula.niveis[faixa.id] ?? 'sem-dado';
 }
 
-/** Célula que contém a coordenada; nula se estiver fora da área coberta. */
-export function celulaEm(grade: GradeRisco, p: Coordenada): CelulaGrade | null {
-  return (
-    grade.celulas.find(
-      ({ limites: l }) =>
-        p.latitude <= l.norte && p.latitude >= l.sul && p.longitude <= l.leste && p.longitude >= l.oeste,
-    ) ?? null
-  );
+/** Ponto dentro do polígono (ray casting; células pequenas, então lat/lng como plano basta). */
+export function dentroDoPoligono(p: Coordenada, poligono: Coordenada[]) {
+  let dentro = false;
+  for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
+    const a = poligono[i];
+    const b = poligono[j];
+    if (
+      a.latitude > p.latitude !== b.latitude > p.latitude &&
+      p.longitude < ((b.longitude - a.longitude) * (p.latitude - a.latitude)) / (b.latitude - a.latitude) + a.longitude
+    ) {
+      dentro = !dentro;
+    }
+  }
+  return dentro;
 }
 
-/** Os quatro cantos da célula, na ordem que o mapa espera para desenhar o polígono. */
+/** A coordenada está dentro da célula (hexágono H3 ou, na demonstração, retângulo). */
+export function contem(celula: CelulaGrade, p: Coordenada) {
+  const l = celula.limites;
+  if (p.latitude > l.norte || p.latitude < l.sul || p.longitude > l.leste || p.longitude < l.oeste) return false;
+  return celula.contorno ? dentroDoPoligono(p, celula.contorno) : true;
+}
+
+/** Célula que contém a coordenada; nula se estiver fora da área coberta. */
+export function celulaEm(grade: GradeRisco, p: Coordenada): CelulaGrade | null {
+  return grade.celulas.find((c) => contem(c, p)) ?? null;
+}
+
+/** Contorno da célula, na ordem que o mapa espera para desenhar o polígono. */
 export function cantos(celula: CelulaGrade): Coordenada[] {
+  if (celula.contorno) return celula.contorno;
   const l = celula.limites;
   return [
     { latitude: l.norte, longitude: l.oeste },

@@ -1,44 +1,67 @@
-import { MOCK_URL } from '@/features/api/cliente';
+import { ErroApi } from '@/features/api/cliente';
 import { chamarAutenticado } from '@/features/conta/sessao';
 import type { Coordenada } from '@/features/grade/tipos';
 
 /**
- * Comparar rotas a pé (POST /v1/rotas/avaliar). Ainda no mock da API (Prism):
- * vai para EXPO_PUBLIC_MOCK_URL. A API busca as rotas num provedor externo e não guarda
- * origem, destino nem o caminho.
+ * Comparar rotas a pé (POST /v1/rotas/avaliar, contrato v0.6 de rotas, com login).
+ * A API busca até 3 rotas a pé no provedor (HeiGIT/openrouteservice, com a chave no servidor),
+ * pontua cada uma na grade H3 da faixa horária da saída e devolve a ordem.
+ * A API não guarda origem, destino nem o caminho. O risco é histórico (jan.–set. 2026), não previsão.
  */
+
+/** Pontuação da rota na grade (todas as porcentagens de 0 a 100). */
+export type PontuacaoRota = {
+  /** Soma do risco ao longo do caminho (quanto menor, melhor). */
+  acumulada: number;
+  indicePorKm: number | null;
+  metrosTotal: number;
+  metrosComDado: number;
+  percentualSemDado: number;
+  percentualForaCobertura: number;
+  /** Parte do caminho que conta como coberta (com dado). Abaixo de 70%: dado insuficiente. */
+  coberturaPercentual: number;
+  dadoInsuficiente: boolean;
+};
 
 export type RotaAvaliada = {
   rotaId: string;
-  distanciaMetros: number;
   duracaoSegundos: number;
-  /** Exposição relativa ao risco registrado (quanto menor, melhor). Nula se a rota não tem dado suficiente. */
-  exposicaoRelativa: number | null;
-  /** Parte da rota (%) sem dado de risco. */
-  percentualSemEstimativa: number;
-  geometriaCodificada: string;
-  /** 1 = menor exposição. Nula quando a comparação não foi concluída. */
+  geometria: Coordenada[];
+  /** 1 = menor risco registrado. Nula quando a comparação não foi concluída. */
   posicao: number | null;
+  /** Faixa horária (0 a 4) usada para a rota inteira: a da hora de saída. */
+  faixa: number;
+  pontuacao: PontuacaoRota;
 };
 
 export type ResultadoRotas = {
   situacao: 'concluida' | 'inconclusiva' | 'indisponivel';
-  motivo:
-    | null
-    | 'cobertura_insuficiente'
-    | 'apenas_uma_rota'
-    | 'provedor_rotas_indisponivel'
-    | 'sem_alternativas'
-    | 'grade_indisponivel'
-    | 'fora_territorio';
+  /** Ex.: cobertura_insuficiente, apenas_uma_rota, provedor_indisponivel, grade_indisponivel, fora_territorio. */
+  motivo: string | null;
   versaoGrade: string | null;
+  fonteRisco?: string;
+  semDado?: string;
+  unidadeIndice?: string;
+  aviso?: string;
   rotas: RotaAvaliada[];
 };
 
 export function avaliarRotas(origem: Coordenada, destino: Coordenada, saidaEm = new Date()) {
   return chamarAutenticado<ResultadoRotas>('/v1/rotas/avaliar', {
-    base: MOCK_URL,
     metodo: 'POST',
-    corpo: { origem, destino, saidaEm: saidaEm.toISOString() },
+    corpo: {
+      origem: { latitude: origem.latitude, longitude: origem.longitude },
+      destino: { latitude: destino.latitude, longitude: destino.longitude },
+      saidaEm: saidaEm.toISOString(), // o contrato exige o fuso explícito (Z serve)
+    },
   });
+}
+
+/** Texto para as recusas próprias desta chamada (422); as outras falhas usam o texto geral. */
+export function mensagemDaRecusa(e: unknown): string | null {
+  if (!(e instanceof ErroApi) || e.status !== 422) return null;
+  if (e.codigo === 'ROTA_EXTENSA') return 'Esse destino fica longe demais para comparar caminhos a pé.';
+  if (e.codigo === 'ROTA_INVALIDA') return 'Não deu para traçar um caminho a pé até esse destino. Tente outro endereço.';
+  if (e.codigo === 'SAIDA_FORA_JANELA') return 'O horário do celular parece errado. Confira a data e a hora e tente de novo.';
+  return null;
 }

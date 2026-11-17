@@ -1,7 +1,6 @@
 import { celulaEm, nivelNaFaixa } from '@/features/grade/recorte';
 import type { Coordenada, FaixaHoraria, GradeRisco } from '@/features/grade/tipos';
 
-import { decodificarPolyline } from './polyline';
 import type { ResultadoRotas, RotaAvaliada } from './rotas-api';
 
 /**
@@ -14,7 +13,7 @@ import type { ResultadoRotas, RotaAvaliada } from './rotas-api';
  * - CA3: nada de "rota segura". CA4: destino fora da área não compara.
  */
 
-/** Cobertura mínima para comparar (a mesma do contrato da API, coberturaMinimaPercentual). */
+/** Cobertura mínima para comparar (a mesma da API: abaixo de 70% de cobertura, dado insuficiente). */
 export const COBERTURA_MINIMA = 70;
 
 export type RotaVista = {
@@ -43,18 +42,14 @@ export type Comparacao =
   | { tipo: 'indisponivel' };
 
 function vista(r: RotaAvaliada): RotaVista {
-  let caminho: Coordenada[] = [];
-  try {
-    caminho = decodificarPolyline(r.geometriaCodificada);
-  } catch {
-    // Geometria inválida: a rota segue sem desenho.
-  }
+  const p = r.pontuacao;
   return {
     id: r.rotaId,
     minutos: Math.max(1, Math.round(r.duracaoSegundos / 60)),
-    metros: r.distanciaMetros,
-    caminho,
-    semDadoPct: Math.round(r.percentualSemEstimativa),
+    metros: p.metrosTotal,
+    caminho: r.geometria ?? [],
+    // Sem dado + fora da grade, medidos de verdade (mesmo que a API conte "sem dado" como coberto).
+    semDadoPct: Math.round(p.percentualSemDado + p.percentualForaCobertura),
   };
 }
 
@@ -114,18 +109,18 @@ export function compararRotas(
   // CA2: alguma rota com menos de 70% do caminho com dado impede a comparação.
   const coberturaInsuficiente =
     resultado.motivo === 'cobertura_insuficiente' ||
-    rotas.some((r) => r.api.exposicaoRelativa === null || r.vista.semDadoPct > 100 - COBERTURA_MINIMA);
+    rotas.some((r) => r.api.pontuacao.dadoInsuficiente || r.vista.semDadoPct > 100 - COBERTURA_MINIMA);
   if (coberturaInsuficiente) return { tipo: 'sem-dado', rotas: rotas.map((r) => r.vista) };
 
   if (rotas.length === 1) return { tipo: 'uma-rota', rota: rotas[0].vista };
 
   const normalIdx = rotas.reduce((m, r, i) => (r.api.duracaoSegundos < rotas[m].api.duracaoSegundos ? i : m), 0);
-  // Menor exposição; no empate (a API dá a mesma posição), fica a mais rápida.
+  // Posição 1 da API = menor risco acumulado. Sem posição (ex.: empate), vale a menor pontuação; empatou, fica a mais rápida.
   const melhorPosicao = Math.min(...rotas.map((r) => r.api.posicao ?? Infinity));
   const empatadas = rotas.map((_, i) => i).filter((i) => (rotas[i].api.posicao ?? Infinity) === melhorPosicao);
   const menorIdx = empatadas.includes(normalIdx)
     ? normalIdx
-    : empatadas.reduce((m, i) => ((rotas[i].api.exposicaoRelativa ?? Infinity) < (rotas[m].api.exposicaoRelativa ?? Infinity) ? i : m), empatadas[0]);
+    : empatadas.reduce((m, i) => (rotas[i].api.pontuacao.acumulada < rotas[m].api.pontuacao.acumulada ? i : m), empatadas[0]);
 
   const normal = rotas[normalIdx];
   const menor = rotas[menorIdx];
@@ -146,8 +141,8 @@ export function compararRotas(
     const evitaMedio = doGrade[normalIdx].medio - doGrade[menorIdx].medio;
     if (evitaAlto > 0) frase = `Esta rota evita ${plural(evitaAlto, 'célula', 'células')} de risco alto.`;
     else if (evitaMedio > 0) frase = `Esta rota evita ${plural(evitaMedio, 'célula', 'células')} de risco médio.`;
-  } else if (normal.api.exposicaoRelativa && menor.api.exposicaoRelativa !== null) {
-    const pct = Math.round((1 - menor.api.exposicaoRelativa / normal.api.exposicaoRelativa) * 100);
+  } else if (normal.api.pontuacao.acumulada > 0) {
+    const pct = Math.round((1 - menor.api.pontuacao.acumulada / normal.api.pontuacao.acumulada) * 100);
     if (pct > 0) frase = `Esta rota tem ${pct}% menos risco registrado no caminho.`;
   }
 

@@ -6,6 +6,7 @@ import { FIAP_PAULISTA, pontoNoCaminho } from '@/features/demo/dados-demo';
 import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { useGrade } from '@/features/grade/grade-context';
 import { faixaAtual } from '@/features/grade/recorte';
+import { preencherReferencia } from '@/features/grade/referencia';
 import type { Coordenada } from '@/features/grade/tipos';
 import { registrarAlerta } from '@/features/historico/historico-repo';
 import { usePet } from '@/features/pet/pet-context';
@@ -220,6 +221,10 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
       const t = trajetoRef.current;
       const r = processarPosicao(g, faixa, coordenada, motorRef.current, Date.now(), !!t);
       motorRef.current = r.estado;
+
+      // Grade da API (H3) não traz o nome da rua: o celular procura uma vez por célula.
+      // Enquanto não chega, os textos ficam sem a rua; na próxima posição já aparece.
+      if (r.celula && !r.celula.referencia) preencherReferencia(r.celula).catch(() => {});
 
       atualizarPosicao({
         nivel: r.nivel ?? 'sem-dado',
