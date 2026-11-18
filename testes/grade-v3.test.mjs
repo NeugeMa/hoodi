@@ -45,3 +45,23 @@ test('v3: a janela mostrada vem do manifest, não de texto fixo no app', () => {
   const g = gradeDoCsv(CSV, { ...VERSAO, manifest: { ...MANIFEST, janela_dados: ['2026-01-01', '2026-09-30'] } });
   assert.deepEqual(g.periodo, { inicio: '2026-01-01', fim: '2026-09-30' });
 });
+
+// Camada consumidora: rota inteira sobre células sem_dado do v3 não pode virar comparação "mais tranquila".
+import { cellToLatLng } from 'h3-js';
+import { celulasDoCaminho, compararRotas } from '../src/features/rotas/comparar.ts';
+
+test('v3: rotas só sobre células sem dado terminam em "sem-dado", não em comparação', () => {
+  const g = gradeDoCsv(CSV, VERSAO);
+  const faixa = g.faixas[0];
+  const vazia = g.celulas.find((c) => c.niveis[faixa.id] === 'sem-dado');
+  assert.ok(vazia, 'a fixture v3 tem célula sem dado na primeira faixa');
+  const [latitude, longitude] = cellToLatLng(vazia.id);
+  const caminho = [{ latitude, longitude }, { latitude, longitude }];
+  assert.equal(celulasDoCaminho(g, faixa, caminho).semDadoPct, 100);
+  const rota = (rotaId, duracaoSegundos, posicao) => ({
+    rotaId, duracaoSegundos, posicao, faixa: 0, geometria: caminho,
+    pontuacao: { metrosTotal: 500, percentualSemDado: 0, percentualForaCobertura: 0, dadoInsuficiente: false, acumulada: 0 },
+  });
+  const r = compararRotas({ situacao: 'concluida', motivo: null, versaoGrade: 'v3', rotas: [rota('a', 600, 1), rota('b', 700, 2)] }, g, faixa);
+  assert.equal(r.tipo, 'sem-dado');
+});
