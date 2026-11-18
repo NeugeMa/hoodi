@@ -20,3 +20,10 @@ test('demo e desenvolvimento respeitam a variável ou a web', () => {
   assert.equal(demoLigado({ ambiente: 'demo', dev: false }, false), false);
   assert.equal(demoLigado({ dev: true }, true), true);
 });
+
+import { webPodePersistirSessao } from '../src/features/conta/sessao-politica.ts';
+
+test('sessão na web: localStorage só fora de produção', () => {
+  assert.equal(webPodePersistirSessao('producao'), false);
+  for (const a of [undefined, 'homologacao', 'demo']) assert.equal(webPodePersistirSessao(a), true);
+});

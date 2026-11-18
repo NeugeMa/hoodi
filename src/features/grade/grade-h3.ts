@@ -46,11 +46,25 @@ export function faixaDoIntervalo(id: number, intervalo: string): FaixaHoraria | 
   return { id: String(id), rotulo: `${inicio}h–${fim}h`, inicio, fim };
 }
 
+/**
+ * Faixas do manifesto. Sem manifesto (ou sem faixas): faixas padrão do contrato v2.
+ * Manifesto presente mas inválido (intervalo ilegível, ids repetidos, faixas que não cobrem 0h–24h
+ * sem lacuna nem sobreposição): CsvInvalido, para a grade anterior continuar valendo.
+ */
 function faixasDoManifesto(v: VersaoGrade): FaixaHoraria[] {
-  const faixas = (v.manifest?.faixas ?? [])
-    .map((f) => faixaDoIntervalo(f.faixa, f.intervalo_horas))
-    .filter((f): f is FaixaHoraria => f !== null);
-  return faixas.length ? faixas : FAIXAS_PADRAO;
+  const brutas = v.manifest?.faixas ?? [];
+  if (brutas.length === 0) return FAIXAS_PADRAO;
+  const faixas = brutas.map((f) => faixaDoIntervalo(f.faixa, f.intervalo_horas));
+  if (faixas.some((f) => f === null)) throw new CsvInvalido('manifesto: intervalo inválido');
+  const validas = (faixas as FaixaHoraria[]).slice().sort((a, b) => a.inicio - b.inicio);
+  if (new Set(validas.map((f) => f.id)).size !== validas.length) throw new CsvInvalido('manifesto: faixas repetidas');
+  let esperado = 0;
+  for (const f of validas) {
+    if (f.inicio !== esperado || f.fim <= f.inicio) throw new CsvInvalido('manifesto: faixas não cobrem o dia');
+    esperado = f.fim;
+  }
+  if (esperado !== 24) throw new CsvInvalido('manifesto: faixas não cobrem o dia');
+  return validas;
 }
 
 /** Contorno do hexágono e o retângulo que o envolve. */
@@ -71,10 +85,17 @@ export function gradeDoCsv(csv: string, versao: VersaoGrade): GradeRisco {
   const linhas = csv.replace(/\r/g, '').split('\n').filter((l) => l.length > 0);
   if (linhas[0] !== CABECALHO_CSV) throw new CsvInvalido('cabeçalho');
 
+  const faixas = faixasDoManifesto(versao);
+  const idsDeFaixa = new Set(faixas.map((f) => f.id));
+  const vistos = new Set<string>();
   const celulas = new Map<string, CelulaGrade>();
   for (let i = 1; i < linhas.length; i++) {
-    const [h3, faixa, , status, nivel] = linhas[i].split(',');
-    if (!h3 || !isValidCell(h3) || !/^[0-4]$/.test(faixa ?? '')) throw new CsvInvalido(`linha ${i + 1}`);
+    const colunas = linhas[i].split(',');
+    if (colunas.length !== 7) throw new CsvInvalido(`colunas na linha ${i + 1}`);
+    const [h3, faixa, , status, nivel] = colunas;
+    if (!h3 || !isValidCell(h3) || !idsDeFaixa.has(faixa ?? '')) throw new CsvInvalido(`linha ${i + 1}`);
+    if (vistos.has(`${h3}|${faixa}`)) throw new CsvInvalido(`duplicada na linha ${i + 1}`);
+    vistos.add(`${h3}|${faixa}`);
     let celula = celulas.get(h3);
     if (!celula) {
       celula = { id: h3, referencia: '', niveis: {}, ...geometria(h3) };
@@ -98,7 +119,7 @@ export function gradeDoCsv(csv: string, versao: VersaoGrade): GradeRisco {
     publicadoEm: versao.publicadoEm,
     fonte: versao.manifest?.fonte?.orgao || 'SSP-SP',
     periodo: janela ? { inicio: janela[0], fim: janela[1] } : undefined,
-    faixas: faixasDoManifesto(versao),
+    faixas,
     celulas: [...celulas.values()],
   };
 }
