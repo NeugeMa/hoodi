@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { lerPreferencia, PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 
+import type { Coordenada } from '@/features/grade/tipos';
+
 import type { Canais, PosicaoAtual, Trajeto } from './tipos';
 
 type TrajetoContexto = {
@@ -10,6 +12,9 @@ type TrajetoContexto = {
   /** Nulo quando não há trajeto em andamento. */
   trajeto: Trajeto | null;
   canais: Canais;
+  /** Caminho de uma rota só para olhar no Mapa, antes de iniciar. Só em memória; nunca é salvo. */
+  previa: Coordenada[] | null;
+  definirPrevia: (caminho: Coordenada[] | null) => void;
   /** Contatos que confirmaram com SIM e recebem o pedido de ajuda (F09). */
   contatosConfirmados: number;
 
@@ -45,6 +50,7 @@ const Contexto = createContext<TrajetoContexto | null>(null);
 export function TrajetoProvider({ children }: { children: ReactNode }) {
   const [posicao, setPosicao] = useState<PosicaoAtual | null>(null);
   const [trajeto, setTrajeto] = useState<Trajeto | null>(null);
+  const [previa, setPrevia] = useState<Coordenada[] | null>(null);
   const [canais, setCanais] = useState<Canais>(CANAIS_INICIAIS);
   const [contatosConfirmados, setContatosConfirmados] = useState(0);
 
@@ -78,9 +84,14 @@ export function TrajetoProvider({ children }: { children: ReactNode }) {
       posicao,
       trajeto,
       canais,
+      previa,
+      definirPrevia: setPrevia,
       contatosConfirmados,
       atualizarPosicao: setPosicao,
-      iniciarTrajeto: setTrajeto,
+      iniciarTrajeto: (t) => {
+        setPrevia(null);
+        setTrajeto(t);
+      },
       atualizarTrajeto: setTrajeto,
       ajustarTrajeto,
       encerrarTrajeto,
@@ -88,7 +99,7 @@ export function TrajetoProvider({ children }: { children: ReactNode }) {
       definirRelogio,
       atualizarContatosConfirmados: setContatosConfirmados,
     }),
-    [posicao, trajeto, canais, contatosConfirmados, ajustarTrajeto, encerrarTrajeto, atualizarCanais, definirRelogio],
+    [posicao, trajeto, canais, previa, contatosConfirmados, ajustarTrajeto, encerrarTrajeto, atualizarCanais, definirRelogio],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

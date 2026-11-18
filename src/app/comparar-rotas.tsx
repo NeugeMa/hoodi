@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {AccessibilityInfo, Keyboard, StyleSheet, View} from 'react-native';
 
 import { TelaConta } from '@/components/conta/tela-conta';
-import { Car, CloudSlash, GpsFix, MapPinLine, PersonSimpleWalk, Question, WarningCircle } from '@/components/icones';
+import { Car, CloudSlash, GpsFix, MapPinLine, MapTrifold, PersonSimpleWalk, Question, WarningCircle } from '@/components/icones';
 import { CartaoRota } from '@/components/rotas/cartao-rota';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
@@ -65,7 +65,7 @@ export default function CompararRotasScreen() {
   const { cores } = useTema();
   const { permissao, pedirLocalizacao } = useAcompanhamento();
   const { grade } = useGrade();
-  const { iniciarTrajeto } = useTrajeto();
+  const { iniciarTrajeto, definirPrevia } = useTrajeto();
   const { consentimentoEm, darConsentimento } = usePreferencias();
   const [destino, setDestino] = useState('');
   const [erroDestino, setErroDestino] = useState<string | null>(null);
@@ -122,6 +122,12 @@ export default function CompararRotasScreen() {
     }
   }
 
+  function verNoMapa() {
+    if (!escolhida || escolhida.caminho.length < 2) return;
+    definirPrevia(escolhida.caminho);
+    router.navigate('/mapa');
+  }
+
   function iniciar() {
     if (!escolhida) return;
     const comecar = () => {
@@ -167,6 +173,14 @@ export default function CompararRotasScreen() {
       rodape={
         resultado && (resultado.tipo === 'comparada' || resultado.tipo === 'sem-dado' || resultado.tipo === 'uma-rota') ? (
           <>
+            <Botao
+              rotulo="Ver no mapa"
+              variante="secundario"
+              icone={MapTrifold}
+              onPress={verNoMapa}
+              desabilitado={!escolhida || escolhida.caminho.length < 2}
+              dica="Mostra a rota escolhida no mapa, sem iniciar o trajeto"
+            />
             <Botao rotulo="Iniciar trajeto" onPress={iniciar} desabilitado={!escolhida} dica="Começa a acompanhar e volta ao Início" />
             {!escolhida ? (
               <Texto variante="legenda" style={styles.centro} accessible={false}>
