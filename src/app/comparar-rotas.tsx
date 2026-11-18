@@ -1,11 +1,13 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {AccessibilityInfo, Keyboard, StyleSheet, View} from 'react-native';
 
 import { TelaConta } from '@/components/conta/tela-conta';
 import { Car, CloudSlash, GpsFix, MapPinLine, MapTrifold, PersonSimpleWalk, Question, WarningCircle } from '@/components/icones';
 import { CartaoRota } from '@/components/rotas/cartao-rota';
+import { LugaresProximos } from '@/components/rotas/lugares-proximos';
+import { SugestoesDestino, type EstadoSugestoes } from '@/components/rotas/sugestoes-destino';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { CampoTexto } from '@/components/ui/campo-texto';
@@ -18,6 +20,14 @@ import { ErroApi, mensagemDeFalha } from '@/features/api/cliente';
 import { useGrade } from '@/features/grade/grade-context';
 import { faixaAtual } from '@/features/grade/recorte';
 import type { Coordenada } from '@/features/grade/tipos';
+import { recomendarLugares, sugerirLugares } from '@/features/lugares/lugares-api';
+import {
+  coordenadaDaEscolha,
+  criarControleDePedidos,
+  ESPERA_DIGITACAO_MS,
+  textoParaBuscar,
+  type Sugestao,
+} from '@/features/lugares/lugares';
 import { usePreferencias } from '@/features/preferencias/preferencias-context';
 import { COBERTURA_MINIMA, compararRotas, type Comparacao, type RotaVista } from '@/features/rotas/comparar';
 import { AVISO_CARRO, modoCarroLiberado, type ModoRota } from '@/features/rotas/modo';
@@ -44,7 +54,10 @@ async function posicaoAtual(): Promise<Coordenada | null> {
   }
 }
 
-/** Endereço digitado → coordenada, pelo geocodificador do próprio celular (nada vai para o servidor do Hoodi). */
+/**
+ * Endereço digitado → coordenada, pelo geocodificador do próprio celular. É o plano B: quando a pessoa
+ * toca numa sugestão, a coordenada dela vale e este passo não acontece.
+ */
 async function acharDestino(texto: string): Promise<Coordenada | null> {
   // Demonstração: qualquer destino vira a Estação Liberdade (o exemplo do TC13).
   if (MODO_DEMO) return ESTACAO_LIBERDADE;
@@ -72,7 +85,43 @@ export default function CompararRotasScreen() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'editando' });
   const [escolhida, setEscolhida] = useState<RotaVista | null>(null);
   const [modo, setModo] = useState<ModoRota>('pe');
+  const [sugestoes, setSugestoes] = useState<Sugestao[]>([]);
+  const [estadoSugestoes, setEstadoSugestoes] = useState<EstadoSugestoes>('ocioso');
+  // Sugestão tocada: a coordenada só vale enquanto o campo ainda tem o mesmo texto.
+  const escolhaRef = useRef<{ rotulo: string; coordenada: Coordenada } | null>(null);
+  const [pedidos] = useState(criarControleDePedidos);
   const carroLiberado = modoCarroLiberado({ flag: process.env.EXPO_PUBLIC_MODO_CARRO, demo: MODO_DEMO });
+
+  // Sugestões enquanto digita: espera 300 ms após a última tecla e descarta respostas atrasadas.
+  useEffect(() => {
+    const texto = textoParaBuscar(destino);
+    const jaEscolhido = coordenadaDaEscolha(escolhaRef.current, destino) !== null;
+    if (!texto || jaEscolhido) {
+      pedidos.cancelar();
+      setSugestoes([]);
+      setEstadoSugestoes('ocioso');
+      return;
+    }
+    const vez = pedidos.proximo();
+    setEstadoSugestoes('carregando');
+    const espera = setTimeout(async () => {
+      const r = await sugerirLugares(texto);
+      if (!pedidos.vale(vez)) return;
+      setSugestoes(r.sugestoes);
+      setEstadoSugestoes(r.situacao === 'indisponivel' ? 'indisponivel' : r.sugestoes.length ? 'ok' : 'vazio');
+    }, ESPERA_DIGITACAO_MS);
+    return () => clearTimeout(espera);
+  }, [destino, pedidos]);
+
+  function escolherDestino(rotulo: string, coordenada: Coordenada) {
+    escolhaRef.current = { rotulo, coordenada };
+    pedidos.cancelar();
+    setSugestoes([]);
+    setEstadoSugestoes('ocioso');
+    setDestino(rotulo);
+    setErroDestino(null);
+    Keyboard.dismiss();
+  }
 
   function trocarModo(novo: ModoRota) {
     if (novo === modo) return;
@@ -97,7 +146,7 @@ export default function CompararRotasScreen() {
       setEstado({ tipo: 'falha', texto: 'Não conseguimos saber onde você está. Confira se a localização está ligada.' });
       return;
     }
-    const alvo = await acharDestino(destino);
+    const alvo = coordenadaDaEscolha(escolhaRef.current, destino) ?? (await acharDestino(destino));
     if (!alvo) {
       setEstado({ tipo: 'editando' });
       setErroDestino('Não achamos esse endereço. Tente com rua e número, ou o nome do lugar.');
@@ -231,6 +280,19 @@ export default function CompararRotasScreen() {
         returnKeyType="search"
         onSubmitEditing={comparar}
       />
+      <SugestoesDestino
+        estado={estadoSugestoes}
+        sugestoes={sugestoes}
+        aoEscolher={(s) => escolherDestino(s.rotulo, s.coordenada)}
+      />
+
+      {permissao === 'concedida' ? (
+        <LugaresProximos
+          obterPosicao={posicaoAtual}
+          buscar={recomendarLugares}
+          aoEscolher={(l) => escolherDestino(l.nome, l.coordenada)}
+        />
+      ) : null}
 
       {estado.tipo === 'sem-internet' ? (
         <Aviso
