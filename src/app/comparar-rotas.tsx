@@ -14,7 +14,7 @@ import { CampoTexto } from '@/components/ui/campo-texto';
 import { Texto } from '@/components/ui/texto';
 import { perguntar } from '@/components/ui/perguntar';
 import { useAcompanhamento } from '@/features/alerta/acompanhamento-context';
-import { ESTACAO_LIBERDADE, FIAP_PAULISTA } from '@/features/demo/dados-demo';
+import { ESTACAO_LIBERDADE } from '@/features/demo/dados-demo';
 import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { ErroApi, mensagemDeFalha } from '@/features/api/cliente';
 import { useGrade } from '@/features/grade/grade-context';
@@ -31,6 +31,7 @@ import {
 import { usePreferencias } from '@/features/preferencias/preferencias-context';
 import { COBERTURA_MINIMA, compararRotas, type Comparacao, type RotaVista } from '@/features/rotas/comparar';
 import { AVISO_CARRO, modoCarroLiberado, type ModoRota } from '@/features/rotas/modo';
+import { posicaoAtual } from '@/features/rotas/posicao';
 import { avaliarRotas, mensagemDaRecusa } from '@/features/rotas/rotas-api';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio } from '@/theme/tokens';
@@ -42,17 +43,6 @@ type Estado =
   | { tipo: 'resultado'; comparacao: Comparacao }
   | { tipo: 'sem-internet' }
   | { tipo: 'falha'; texto: string };
-
-async function posicaoAtual(): Promise<Coordenada | null> {
-  if (MODO_DEMO) return FIAP_PAULISTA; // demonstração: sempre saindo da FIAP Paulista
-  try {
-    const ultima = await Location.getLastKnownPositionAsync({ maxAge: 60_000 });
-    const local = ultima ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
-    return { latitude: local.coords.latitude, longitude: local.coords.longitude };
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Endereço digitado → coordenada, pelo geocodificador do próprio celular. É o plano B: quando a pessoa
