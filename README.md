@@ -64,9 +64,6 @@
 | **5 · Igualdade de gênero** | 5.2: eliminar a violência contra mulheres e meninas nos espaços públicos | Quem mais teme andar sozinha à noite são as mulheres; o alerta discreto e o pedido de ajuda respondem a esse medo |
 | **4 · Educação de qualidade** | 4.a: ambientes de aprendizagem seguros | O cidadão é o estudante do noturno: o trajeto até a faculdade faz parte de estudar com segurança |
 
-## Vídeo
-
-**App rodando (até 3 min):** _link a adicionar_
 
 ## Para avaliar
 
