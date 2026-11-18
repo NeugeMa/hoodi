@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {AccessibilityInfo, Keyboard, StyleSheet, View} from 'react-native';
 
 import { TelaConta } from '@/components/conta/tela-conta';
-import { CloudSlash, GpsFix, MapPinLine, Question, WarningCircle } from '@/components/icones';
+import { Car, CloudSlash, GpsFix, MapPinLine, PersonSimpleWalk, Question, WarningCircle } from '@/components/icones';
 import { CartaoRota } from '@/components/rotas/cartao-rota';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
@@ -20,6 +20,7 @@ import { faixaAtual } from '@/features/grade/recorte';
 import type { Coordenada } from '@/features/grade/tipos';
 import { usePreferencias } from '@/features/preferencias/preferencias-context';
 import { COBERTURA_MINIMA, compararRotas, type Comparacao, type RotaVista } from '@/features/rotas/comparar';
+import { AVISO_CARRO, modoCarroLiberado, type ModoRota } from '@/features/rotas/modo';
 import { avaliarRotas, mensagemDaRecusa } from '@/features/rotas/rotas-api';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio } from '@/theme/tokens';
@@ -70,6 +71,15 @@ export default function CompararRotasScreen() {
   const [erroDestino, setErroDestino] = useState<string | null>(null);
   const [estado, setEstado] = useState<Estado>({ tipo: 'editando' });
   const [escolhida, setEscolhida] = useState<RotaVista | null>(null);
+  const [modo, setModo] = useState<ModoRota>('pe');
+  const carroLiberado = modoCarroLiberado({ flag: process.env.EXPO_PUBLIC_MODO_CARRO, demo: MODO_DEMO });
+
+  function trocarModo(novo: ModoRota) {
+    if (novo === modo) return;
+    setModo(novo);
+    setEscolhida(null);
+    if (estado.tipo !== 'buscando') setEstado({ tipo: 'editando' });
+  }
 
   async function comparar() {
     Keyboard.dismiss();
@@ -95,7 +105,11 @@ export default function CompararRotasScreen() {
     }
 
     try {
-      const resultado = await avaliarRotas(origem, alvo);
+      const resultado = await avaliarRotas(origem, alvo, new Date(), modo);
+      if (resultado.motivo === 'modo_nao_suportado') {
+        setEstado({ tipo: 'falha', texto: 'A rota de carro ainda não está disponível no servidor. Use a rota a pé por enquanto.' });
+        return;
+      }
       const comparacao = compararRotas(resultado, grade, grade ? faixaAtual(grade.faixas) : null);
       setEstado({ tipo: 'resultado', comparacao });
       if (comparacao.tipo === 'comparada') setEscolhida(comparacao.menorRisco);
@@ -104,7 +118,7 @@ export default function CompararRotasScreen() {
     } catch (e) {
       // CA5: sem internet, avisa e o mapa continua com os dados salvos.
       if (e instanceof ErroApi && e.tipo === 'sem-internet') setEstado({ tipo: 'sem-internet' });
-      else setEstado({ tipo: 'falha', texto: mensagemDaRecusa(e) ?? mensagemDeFalha(e) });
+      else setEstado({ tipo: 'falha', texto: mensagemDaRecusa(e, modo) ?? mensagemDeFalha(e) });
     }
   }
 
@@ -149,7 +163,7 @@ export default function CompararRotasScreen() {
   return (
     <TelaConta
       titulo="Comparar rotas"
-      subtitulo="Da sua posição até o destino: a rota normal e a de menor risco registrado."
+      subtitulo={`Da sua posição até o destino, ${modo === 'carro' ? 'de carro' : 'a pé'}: a rota normal e a de menor risco registrado.`}
       rodape={
         resultado && (resultado.tipo === 'comparada' || resultado.tipo === 'sem-dado' || resultado.tipo === 'uma-rota') ? (
           <>
@@ -177,6 +191,17 @@ export default function CompararRotasScreen() {
           <Texto variante="corpoForte">Saindo de onde você está</Texto>
         </View>
       )}
+
+      {carroLiberado ? (
+        <View style={styles.modos} accessibilityRole="radiogroup">
+          <View style={styles.modo}>
+            <Botao rotulo="A pé" icone={PersonSimpleWalk} variante={modo === 'pe' ? 'primario' : 'secundario'} onPress={() => trocarModo('pe')} dica="Comparar rotas a pé" />
+          </View>
+          <View style={styles.modo}>
+            <Botao rotulo="De carro" icone={Car} variante={modo === 'carro' ? 'primario' : 'secundario'} onPress={() => trocarModo('carro')} dica="Comparar rotas de carro" />
+          </View>
+        </View>
+      ) : null}
 
       <CampoTexto
         rotulo="Para onde você vai"
@@ -292,6 +317,7 @@ export default function CompararRotasScreen() {
         </View>
       ) : null}
 
+      {modo === 'carro' ? <Texto variante="legenda">{AVISO_CARRO}</Texto> : null}
       <Texto variante="legenda">Risco com base em registros da SSP-SP: o melhor dado disponível no período.</Texto>
     </TelaConta>
   );
@@ -300,5 +326,7 @@ export default function CompararRotasScreen() {
 const styles = StyleSheet.create({
   origem: { flexDirection: 'row', alignItems: 'center', gap: espaco[3], padding: espaco[4], borderRadius: raio.md },
   rotas: { gap: espaco[3] },
+  modos: { flexDirection: 'row', gap: espaco[3] },
+  modo: { flex: 1 },
   centro: { textAlign: 'center' },
 });

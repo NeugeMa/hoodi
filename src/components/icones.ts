@@ -37,6 +37,8 @@ export { Prohibit } from 'phosphor-react-native/src/icons/Prohibit';
 export { X } from 'phosphor-react-native/src/icons/X';
 export { ClockCounterClockwise } from 'phosphor-react-native/src/icons/ClockCounterClockwise';
 export { Clock } from 'phosphor-react-native/src/icons/Clock';
+export { Car } from 'phosphor-react-native/src/icons/Car';
+export { PersonSimpleWalk } from 'phosphor-react-native/src/icons/PersonSimpleWalk';
 export { House } from 'phosphor-react-native/src/icons/House';
 export { Info } from 'phosphor-react-native/src/icons/Info';
 export { Lock } from 'phosphor-react-native/src/icons/Lock';
