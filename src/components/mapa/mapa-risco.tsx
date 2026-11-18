@@ -61,6 +61,20 @@ export function MapaRisco({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [temPosicao]);
 
+  // Rota nova (prévia ou trajeto): enquadra o caminho inteiro, senão ele pode ficar fora da tela.
+  const inicio = caminho[0];
+  const fim = caminho[caminho.length - 1];
+  const chaveCaminho = caminho.length > 1 ? `${caminho.length}|${inicio.latitude}|${inicio.longitude}|${fim.latitude}|${fim.longitude}` : '';
+  useEffect(() => {
+    if (!chaveCaminho) return;
+    mapa.current?.fitToCoordinates(caminho, {
+      edgePadding: { top: margemSuperior + 48, bottom: margemInferior + 48, left: 48, right: 48 },
+      animated: true,
+    });
+    // Reenquadra quando o caminho muda ou o painel muda de altura; não persegue a posição.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chaveCaminho, margemInferior]);
+
   function corDoNivel(nivel: NivelRisco) {
     return nivel === 'sem-dado' ? cores.grafiteApagado : cores[NIVEL[nivel].cor];
   }
@@ -121,6 +135,12 @@ export function MapaRisco({
           />
         ))}
 
+        {chaveCaminho ? (
+          <Marker coordinate={fim} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} title="Destino">
+            <View style={[styles.destino, { backgroundColor: cores.grafite, borderColor: cores.papelElevado }]} />
+          </Marker>
+        ) : null}
+
         {posicao ? (
           <Marker coordinate={posicao} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} title="Você está aqui">
             <View style={[styles.halo, { backgroundColor: comAlfa(cores.foco, 0.18) }]}>
@@ -154,6 +174,7 @@ export function MapaRisco({
 
 const styles = StyleSheet.create({
   halo: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  destino: { width: 22, height: 22, borderRadius: 5, borderWidth: 4 },
   ponto: { width: 18, height: 18, borderRadius: 9, borderWidth: 3 },
   centralizar: {
     position: 'absolute',
