@@ -52,6 +52,8 @@ type PetContexto = {
   enviarNivel: (nivel: NivelRisco, opcoes?: { vibrar?: boolean }) => Promise<void>;
   /** Fim do trajeto: o Pet mostra a carinha dormindo. */
   fimTrajeto: () => Promise<void>;
+  /** Pedido de ajuda registrado: o Pet vibra rápido 5 vezes (comando Identificar). */
+  confirmarPedidoAjuda: () => Promise<void>;
   /** Clique ou pressão longa no botão do Pet. Devolve a função que para de ouvir. */
   aoEvento: (callback: (evento: EventoPet) => void) => () => void;
   esquecer: () => Promise<void>;
@@ -315,6 +317,10 @@ export function PetProvider({ children }: { children: ReactNode }) {
     await comando((s) => montarSimples(TIPO.fimTrajeto, s));
   }, [comando]);
 
+  const confirmarPedidoAjuda = useCallback(async () => {
+    await comando((s) => montarSimples(TIPO.identificar, s));
+  }, [comando]);
+
   const aoEvento = useCallback((callback: (evento: EventoPet) => void) => {
     ouvintesRef.current.add(callback);
     return () => {
@@ -357,10 +363,11 @@ export function PetProvider({ children }: { children: ReactNode }) {
       testarVibracao,
       enviarNivel,
       fimTrajeto,
+      confirmarPedidoAjuda,
       aoEvento,
       esquecer,
     }),
-    [bluetooth, pareado, conectado, buscando, encontrados, buscaVazia, pareandoId, erro, iniciarBusca, pararBusca, parear, testarVibracao, enviarNivel, fimTrajeto, aoEvento, esquecer],
+    [bluetooth, pareado, conectado, buscando, encontrados, buscaVazia, pareandoId, erro, iniciarBusca, pararBusca, parear, testarVibracao, enviarNivel, fimTrajeto, confirmarPedidoAjuda, aoEvento, esquecer],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
