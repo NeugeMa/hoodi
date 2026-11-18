@@ -18,7 +18,9 @@ import { useTema } from '@/theme/use-tema';
 /** O que fica no aparelho e o que sai (F08 CA3 · RNF11). */
 const NO_APARELHO = [
   'Sua posição, seus trajetos e o histórico de alertas ficam só neste celular.',
-  'Nada disso sai do aparelho, a não ser quando você aperta Pedir ajuda: aí seus contatos confirmados recebem seu nome, a hora e a posição aproximada.',
+  'Quando você aperta Pedir ajuda, seus contatos confirmados recebem seu nome, a hora e a posição aproximada.',
+  'Quando você compara rotas, a origem e o destino passam pelo servidor do Hoodi até o serviço de mapas HeiGIT, que traça os caminhos a pé. O servidor do Hoodi não guarda o trajeto.',
+  'Para achar endereços e nomes de rua, o celular usa o serviço de endereços do próprio sistema (Google ou Apple), com o endereço digitado ou com o centro da área do mapa, não com a sua posição exata.',
   'No servidor do Hoodi ficam só a sua conta (nome e e-mail) e os seus contatos de segurança.',
   'O risco vem de registros públicos da SSP-SP. É o melhor dado disponível no período e não garante segurança.',
 ];

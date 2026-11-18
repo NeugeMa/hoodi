@@ -61,7 +61,7 @@ Mapa real em tons de cinza com o risco por cima: a única cor na tela é a do ri
 | Fora do perímetro | "O hoodi ainda não tem dados para este lugar", sem nível | CA9 |
 | Posição ainda desconhecida | "Localizando você", mapa centrado na FIAP Paulista | — |
 
-**Enquanto a API não publica a grade v0.6**, o Mapa mostra a cidade em cinza e, no painel, "Dados de risco indisponíveis" com **Tentar de novo**. No modo demonstração aparece a grade simulada.
+**A grade vem da API** (contrato v0.6): 279 hexágonos H3 em volta da FIAP Paulista, em 5 faixas de horário, com os registros da SSP-SP de jan. a set. 2026. Enquanto a API não tem a grade publicada, o Mapa mostra a cidade em cinza e, no painel, "Dados de risco ainda não publicados" com **Tentar de novo**. No modo demonstração aparece a grade simulada. Detalhes em [integracoes.md](integracoes.md#grade-de-risco-download-e-banco-local).
 
 
 ## Cadastro e acesso (F01)
@@ -104,7 +104,7 @@ Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por 
 - **Pedido de ajuda:** vai com a posição **arredondada para cerca de 100 m** (endereço aproximado) e uma chave de idempotência reaproveitada por 120 s, para um toque repetido não virar dois pedidos. A tela mostra a situação sem prometer entrega ("o aviso saiu", nunca "recebido").
 - **Mensagem (CA5):** convite e pedido não pedem login, senha, dinheiro nem instalação e terminam com "Se não reconhece, ignore".
 - **Push:** depois de entrar, o app registra o token Expo do aparelho na API (`PUT /v1/push/tokens`), e tocar no aviso abre o pedido. Precisa de development build com projeto EAS (`extra.eas.projectId`); sem isso, o contato vê o pedido em **Contatos > Pedidos de ajuda recebidos**.
-- **Estado da API:** contatos, convites, push e o **pânico** (`/v1/panico`, v0.6) já estão na API do Abner. O envio do push vem desligado por padrão na API (`Panico__EnvioExpoHabilitado=false`): para a demo, ligue na VM; desligado, o pedido fica registrado e o contato vê em "Pedidos recebidos". Só o **Comparar rotas** continua no mock: rode o Prism na porta 4010 (`npx @stoplight/prism-cli mock contracts/openapi.yaml -h 0.0.0.0`) e ponha no `.env` também `EXPO_PUBLIC_MOCK_URL=http://IP-DO-PC:4010`.
+- **Estado da API:** contatos, convites, push e o **pânico** (`/v1/panico`, v0.6) já estão na API do Abner. O envio do push vem desligado por padrão na API (`Panico__EnvioExpoHabilitado=false`): para a demo, ligue na VM; desligado, o pedido fica registrado e o contato vê em "Pedidos recebidos". O **Comparar rotas** e a **grade de risco** também vêm da API (v0.6).
 
 
 ## Comparar rotas (F04)
@@ -113,13 +113,13 @@ Aberta pelo **Comparar rotas** do Início (precisa de conta, porque a API de rot
 
 - **Origem:** sempre a sua posição atual (TC13). Sem permissão de localização, a tela pede antes.
 - **Destino:** endereço ou nome do lugar, convertido em coordenada pelo **próprio celular** (`expo-location`); nada disso vai para o servidor do Hoodi além da consulta de rotas. Vazio ou não encontrado: o app explica e não compara (CA4).
-- **Resultado** (`POST /v1/rotas/avaliar`, ainda no mock): cartões **Menor risco registrado** e **Rota normal** (a mais rápida), com a diferença em minutos e uma frase como "Esta rota evita 3 células de risco alto" (contada na grade salva no aparelho) ou, sem grade, a diferença percentual de risco registrado (CA1). Se a mais rápida já é a de menor risco, aparece um cartão só.
+- **Resultado** (`POST /v1/rotas/avaliar`, rotas a pé do provedor HeiGIT pontuadas na grade H3 pela API): cartões **Menor risco registrado** e **Rota normal** (a mais rápida), com a diferença em minutos e uma frase como "Esta rota evita 3 células de risco alto" (contada na grade salva no aparelho) ou, sem grade, a diferença percentual de risco registrado (CA1). Se a mais rápida já é a de menor risco, aparece um cartão só.
 - **Trecho sem dado (CA2 · TC14), regra dos 70% (decisão da equipe em 16/11, igual ao contrato da API):** o app compara quando **todas** as rotas têm pelo menos 70% do caminho com dado, e cada cartão mostra quanto falta, por exemplo **"10% do caminho sem dado. Sem dado não quer dizer área tranquila."** Se alguma rota tem mais de 30% sem dado (pela API ou pela grade do aparelho, vale a maior), o app diz "Não dá para comparar" e mostra as rotas só como "Rota 1, Rota 2", sem indicar a de menor risco. A regra fica em [`comparar.ts`](../src/features/rotas/comparar.ts) (`COBERTURA_MINIMA`).
 - **Fora da área (CA4)** e **sem internet (CA5 · TC34):** avisos próprios; sem internet, o botão **Ver o mapa** leva ao Mapa com os dados salvos.
 - **Iniciar trajeto (CA6):** começa o acompanhamento com o caminho da rota escolhida (o Mapa desenha) e volta ao Início. Sem consentimento, pede antes (F08 CA4 · TC38).
 - **Linguagem (CA3):** só "menor risco registrado" e "melhor dado disponível no período".
 
-> Com o mock do Prism, a resposta de exemplo tem uma rota com 10% sem dado: o app compara e o cartão dessa rota mostra "10% do caminho sem dado". **No Azure, o F04 CA2 e o TC14 precisam ser atualizados para a regra dos 70%.**
+> A parte sem dado de cada cartão soma o "sem dado" e o "fora da grade" que a API mede no caminho. **No Azure, o F04 CA2 e o TC14 precisam ser atualizados para a regra dos 70%.**
 
 
 ## Permissões e tema escuro (F02)
@@ -147,7 +147,7 @@ O **Perfil** funciona com ou sem conta; sem conta, mostra o convite para **Entra
 - **Tema:** em Aparência, "Igual ao celular", "Escuro" ou "Claro".
 
 **Dados e privacidade** (`/privacidade`):
-- O que fica no aparelho e o que sai, e que o risco vem da SSP-SP (CA3 · TC32).
+- O que fica no aparelho e o que sai, e que o risco vem da SSP-SP (CA3 · TC32). Sai do aparelho: o pedido de ajuda (para os contatos), a origem e o destino do Comparar rotas (pela API até o HeiGIT; a API não guarda o trajeto) e, para nomes de rua, o endereço digitado ou o centro da célula do mapa (para o geocodificador do sistema, Google ou Apple), nunca a posição exata.
 - **Revogar consentimento** (CA4 · TC38): com confirmação; os alertas param e o app explica como dar de novo (**Dar consentimento**). Sem consentimento, Comparar rotas pede o consentimento antes de iniciar o trajeto.
 - **Excluir conta** (CA5 · TC39): abre uma folha que explica o que é apagado e **pede a senha** (`DELETE /v1/conta` com `{ senha }`, v0.6 do Abner). A API apaga conta, sessões, convites, vínculos dos dois lados e tokens de push numa transação, e o app volta ao Início sem conta. Senha errada (403 `SENHA_INVALIDA`): "Senha incorreta. Nada foi apagado."
 

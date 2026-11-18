@@ -20,7 +20,7 @@ import { faixaAtual } from '@/features/grade/recorte';
 import type { Coordenada } from '@/features/grade/tipos';
 import { usePreferencias } from '@/features/preferencias/preferencias-context';
 import { COBERTURA_MINIMA, compararRotas, type Comparacao, type RotaVista } from '@/features/rotas/comparar';
-import { avaliarRotas } from '@/features/rotas/rotas-api';
+import { avaliarRotas, mensagemDaRecusa } from '@/features/rotas/rotas-api';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 import { espaco, raio } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
@@ -104,7 +104,7 @@ export default function CompararRotasScreen() {
     } catch (e) {
       // CA5: sem internet, avisa e o mapa continua com os dados salvos.
       if (e instanceof ErroApi && e.tipo === 'sem-internet') setEstado({ tipo: 'sem-internet' });
-      else setEstado({ tipo: 'falha', texto: mensagemDeFalha(e) });
+      else setEstado({ tipo: 'falha', texto: mensagemDaRecusa(e) ?? mensagemDeFalha(e) });
     }
   }
 
