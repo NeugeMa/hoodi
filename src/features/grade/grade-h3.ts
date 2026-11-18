@@ -102,9 +102,9 @@ export function gradeDoCsv(csv: string, versao: VersaoGrade): GradeRisco {
       celulas.set(h3, celula);
     }
     if (status === 'com_dado') {
-      const n = Number(nivel);
-      if (!Number.isInteger(n) || n < 0 || n > 3) throw new CsvInvalido(`nível na linha ${i + 1}`);
-      celula.niveis[faixa] = nivelDaApi(n);
+      // Campo vazio daria Number('') = 0 (tranquilo): só vale um dígito explícito de 0 a 3.
+      if (!/^[0-3]$/.test(nivel ?? '')) throw new CsvInvalido(`nível na linha ${i + 1}`);
+      celula.niveis[faixa] = nivelDaApi(Number(nivel));
     } else if (status === 'sem_dado') {
       celula.niveis[faixa] = 'sem-dado';
     } else {
@@ -116,6 +116,7 @@ export function gradeDoCsv(csv: string, versao: VersaoGrade): GradeRisco {
   const janela = versao.manifest?.janela_dados;
   return {
     versao: versao.versao,
+    sha256: versao.sha256,
     publicadoEm: versao.publicadoEm,
     fonte: versao.manifest?.fonte?.orgao || 'SSP-SP',
     periodo: janela ? { inicio: janela[0], fim: janela[1] } : undefined,

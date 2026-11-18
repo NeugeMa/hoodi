@@ -39,7 +39,8 @@ async function sincronizar(): Promise<Resultado> {
     const versao = await buscarVersao();
     // Grade salva sem contorno = formato antigo (antes do H3): baixa de novo.
     const antiga = grade !== null && grade.celulas.some((c) => !c.contorno);
-    if (grade?.versao !== versao.versao || antiga) {
+    const shaDiverge = grade?.sha256 !== undefined && grade.sha256.toLowerCase() !== versao.sha256.toLowerCase();
+    if (grade?.versao !== versao.versao || antiga || shaDiverge) {
       grade = await salvarGrade(await baixarGrade(versao));
     }
     return { grade, falha: null };

@@ -62,6 +62,19 @@ test('v3: rotas só sobre células sem dado terminam em "sem-dado", não em comp
     rotaId, duracaoSegundos, posicao, faixa: 0, geometria: caminho,
     pontuacao: { metrosTotal: 500, percentualSemDado: 0, percentualForaCobertura: 0, dadoInsuficiente: false, acumulada: 0 },
   });
-  const r = compararRotas({ situacao: 'concluida', motivo: null, versaoGrade: 'v3', rotas: [rota('a', 600, 1), rota('b', 700, 2)] }, g, faixa);
+  const r = compararRotas({ situacao: 'concluida', motivo: null, versaoGrade: g.versao, rotas: [rota('a', 600, 1), rota('b', 700, 2)] }, g, faixa);
   assert.equal(r.tipo, 'sem-dado');
+  // Versão da API diferente da grade local: a grade local não entra (cobertura vem só da API).
+  const outra = compararRotas({ situacao: 'concluida', motivo: null, versaoGrade: 'outra', rotas: [rota('a', 600, 1), rota('b', 700, 2)] }, g, faixa);
+  assert.equal(outra.tipo, 'comparada');
+  // Resposta inconclusiva por motivo desconhecido não vira comparação.
+  const inc = compararRotas({ situacao: 'inconclusiva', motivo: 'grade_indisponivel', versaoGrade: g.versao, rotas: [rota('a', 600, 1), rota('b', 700, 2)] }, g, faixa);
+  assert.equal(inc.tipo, 'indisponivel');
+});
+
+test('v3: nível vazio em linha com_dado é recusado (não vira tranquilo)', () => {
+  const csv = CSV.split('\n');
+  const i = csv.findIndex((l, k) => k > 0 && l.includes(',com_dado,'));
+  const cols = csv[i].split(','); cols[4] = ''; csv[i] = cols.join(',');
+  assert.throws(() => gradeDoCsv(csv.join('\n'), VERSAO));
 });
