@@ -151,8 +151,8 @@ export default function MapaScreen() {
         ) : (
           <>
             <OndeEstou
-              nivel={posicao?.celulaId ? posicao.nivel : null}
-              local={posicao?.local ?? null}
+              nivel={posicao?.nivel ?? null}
+              local={posicao?.local || null}
               explicacao={explicacaoDaPosicao(posicao)}
             />
             <LegendaMapa />
