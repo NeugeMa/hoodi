@@ -25,6 +25,7 @@ import { useTema } from '@/theme/use-tema';
 const CONSENTIMENTO = [
   'O risco da sua posição é calculado neste celular. O trajeto e o histórico de alertas também ficam só no aparelho.',
   'Ao comparar rotas ou buscar um destino, a origem, o destino e o texto digitado passam pelo servidor do Hoodi e por serviços de mapas e de busca de endereços (HeiGIT). O servidor do Hoodi não guarda o trajeto.',
+  'Ao pedir lugares perto de você, sua posição vai junto, arredondada. Nada disso fica guardado.',
   'Quando você aperta Pedir ajuda, seus contatos confirmados recebem seu nome, a hora e o endereço aproximado.',
   'O risco vem de registros públicos da SSP-SP. Você pode revogar este consentimento e excluir a conta no Perfil.',
 ];
