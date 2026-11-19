@@ -98,6 +98,12 @@ export function compararRotas(
   if (resultado.situacao === 'indisponivel' || resultado.rotas.length === 0) {
     return resultado.motivo === 'fora_territorio' ? { tipo: 'fora' } : { tipo: 'indisponivel' };
   }
+  // Inconclusiva por outro motivo que não cobertura ou rota única: não há base para ranquear.
+  if (resultado.situacao === 'inconclusiva' && resultado.motivo !== 'cobertura_insuficiente' && resultado.motivo !== 'apenas_uma_rota' && resultado.rotas.length > 1) {
+    return { tipo: 'indisponivel' };
+  }
+  // A API ordenou com outra versão da grade: a grade local não vale para cobertura e frase.
+  if (grade && resultado.versaoGrade && grade.versao !== resultado.versaoGrade) grade = null;
 
   const rotas = resultado.rotas.map((r) => ({ api: r, vista: vista(r) }));
   const doGrade = grade ? rotas.map((r) => celulasDoCaminho(grade, faixa, r.vista.caminho)) : null;

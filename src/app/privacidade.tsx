@@ -20,6 +20,7 @@ const NO_APARELHO = [
   'Sua posição, seus trajetos e o histórico de alertas ficam só neste celular.',
   'Quando você aperta Pedir ajuda, seus contatos confirmados recebem seu nome, a hora e a posição aproximada.',
   'Quando você compara rotas, a origem e o destino passam pelo servidor do Hoodi até o serviço de mapas HeiGIT, que traça os caminhos a pé. O servidor do Hoodi não guarda o trajeto.',
+  'Ao digitar o destino, o texto vai ao servidor do Hoodi e ao serviço de busca de endereços para sugerir lugares. Ao pedir lugares perto de você, a posição vai junto, arredondada. Nada disso fica guardado.',
   'Para achar endereços e nomes de rua, o celular usa o serviço de endereços do próprio sistema (Google ou Apple), com o endereço digitado ou com o centro da área do mapa, não com a sua posição exata.',
   'No servidor do Hoodi ficam só a sua conta (nome e e-mail) e os seus contatos de segurança.',
   'O risco vem de registros públicos da SSP-SP. É o melhor dado disponível no período e não garante segurança.',

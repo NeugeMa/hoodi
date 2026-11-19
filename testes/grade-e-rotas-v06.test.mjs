@@ -114,3 +114,20 @@ test('alerta sem o nome da rua (grade da API): texto continua certo', () => {
   assert.ok(avaliarAvisoAntecipado({ rua: '', nivel: 'alto', distanciaMetros: 150, celulaId: 'c2' }, 'tranquila', 300, avisados));
   assert.equal(avaliarAvisoAntecipado({ rua: '', nivel: 'alto', distanciaMetros: 100, celulaId: 'c2' }, 'tranquila', 300, avisados), null);
 });
+
+test('grade H3: manifesto inválido falha fechado (não cai nas faixas padrão)', () => {
+  const comFaixas = (faixas) => ({ ...VERSAO, manifest: { ...VERSAO.manifest, faixas } });
+  const ok = VERSAO.manifest.faixas;
+  assert.throws(() => gradeDoCsv(CSV, comFaixas([...ok.slice(0, 4), { faixa: 4, intervalo_horas: 'lixo' }])), CsvInvalido);
+  assert.throws(() => gradeDoCsv(CSV, comFaixas(ok.slice(0, 4))), CsvInvalido); // não cobre até 24h
+  assert.throws(() => gradeDoCsv(CSV, comFaixas([...ok, { faixa: 4, intervalo_horas: '[21,24)' }])), CsvInvalido); // id repetido
+  assert.throws(() => gradeDoCsv(CSV, comFaixas([ok[0], { faixa: 1, intervalo_horas: '[5,12)' }, ...ok.slice(2)])), CsvInvalido); // sobreposição
+  assert.equal(gradeDoCsv(CSV, { ...VERSAO, manifest: undefined }).faixas.length, 5); // sem manifesto: padrão
+});
+
+test('grade H3: CSV com linha duplicada, coluna a mais ou faixa fora do manifesto é recusado', () => {
+  const dup = CSV.replace('\n89a8100c00bffff,0,', '\n89a8100c003ffff,0,madrugada,com_dado,0,0.185185,4\n89a8100c00bffff,0,');
+  assert.throws(() => gradeDoCsv(dup, VERSAO), CsvInvalido);
+  assert.throws(() => gradeDoCsv(CSV.replace('0.185185,4', '0.185185,4,extra'), VERSAO), CsvInvalido);
+  assert.throws(() => gradeDoCsv(CSV.replace('89a8100c00bffff,4,', '89a8100c00bffff,9,'), VERSAO), CsvInvalido);
+});

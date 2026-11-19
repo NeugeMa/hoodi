@@ -12,6 +12,7 @@ import { registrarAlerta } from '@/features/historico/historico-repo';
 import { usePet } from '@/features/pet/pet-context';
 import { horarioPermite } from '@/features/preferencias/alertas';
 import { usePreferencias } from '@/features/preferencias/preferencias-context';
+import { lerPreferencia, PREF, salvarPreferencia } from '@/features/preferencias/preferencias-repo';
 import type { NivelRisco } from '@/features/risco/nivel';
 import { useTrajeto } from '@/features/trajeto/trajeto-context';
 
@@ -25,6 +26,13 @@ import {
   type EstadoMotor,
 } from './motor';
 import { notificarAlerta, prepararNotificacoes } from './notificacoes';
+import {
+  definirOuvinte,
+  iniciarSegundoPlano,
+  pararSegundoPlano,
+  pedirSegundoPlano,
+  type PermissaoSegundoPlano,
+} from './segundo-plano';
 
 export type PermissaoLocalizacao = 'desconhecida' | 'concedida' | 'negada';
 
@@ -35,6 +43,11 @@ type AcompanhamentoContexto = {
   /** Alerta na tela. Risco alto fica até a pessoa agir ou sair da área (F07 CA6). */
   alertaAtivo: Alerta | null;
   dispensarAlerta: () => void;
+  /** A pessoa ligou o acompanhamento com a tela apagada (precisa da permissão "sempre"). */
+  segundoPlano: boolean;
+  /** Pede a permissão de segundo plano e liga; devolve o que o sistema respondeu. */
+  ativarSegundoPlano: () => Promise<PermissaoSegundoPlano>;
+  desativarSegundoPlano: () => Promise<void>;
 };
 
 /** Risco médio e aviso antecipado somem sozinhos depois deste tempo; Risco alto não. */
@@ -55,7 +68,7 @@ const Contexto = createContext<AcompanhamentoContexto | null>(null);
 /**
  * Acompanhamento da posição e alerta de risco (F05/F07).
  * Com o app aberto, segue o GPS, descobre a célula na grade salva, atualiza o Início
- * e, durante um trajeto, dispara o alerta quando o nível sobe: aviso na tela,
+ * e dispara o alerta quando o nível sobe, com ou sem trajeto (alerta ambiente): aviso na tela,
  * notificação (espelhada no relógio), vibração no Hoodi Pet e registro no Histórico.
  *
  * Como o alerta chega a cada canal:
@@ -74,6 +87,7 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
   // Modo demonstração: posição simulada, sem pedir o GPS.
   const [permissao, setPermissao] = useState<PermissaoLocalizacao>(MODO_DEMO ? 'concedida' : 'desconhecida');
   const [alertaAtivo, setAlertaAtivo] = useState<Alerta | null>(null);
+  const [segundoPlano, setSegundoPlano] = useState(false);
 
   // Valores mais recentes para o callback do GPS, sem reiniciar o acompanhamento a cada mudança.
   const gradeRef = useRef(grade);
@@ -130,13 +144,12 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
     [aoEvento, cancelarConfirmacao],
   );
 
-  // Sem trajeto não há alerta (F05 CA4): limpa o estado do motor quando o trajeto acaba
-  // e o Pet volta a dormir.
+  // Fim do trajeto (F05 CA4): limpa os avisos do trajeto e o Pet volta a dormir.
+  // O alerta ambiente continua, então o nível conhecido do motor é mantido.
   const emTrajeto = !!trajeto;
   const estavaEmTrajetoRef = useRef(false);
   useEffect(() => {
     if (!emTrajeto) {
-      motorRef.current = { ...motorRef.current, ultimoAlertaEm: null, nivelUltimoAlerta: null, pendente: false };
       cancelarConfirmacao();
       nivelNoPetRef.current = null;
       avisadosRef.current = new Set();
@@ -169,6 +182,35 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
     const r = await Location.requestForegroundPermissionsAsync();
     setPermissao(r.granted ? 'concedida' : 'negada');
     if (r.granted) prepararNotificacoes();
+  }, []);
+
+  // Segundo plano ligado antes? Só vale se a permissão do sistema continua dada (checada ao iniciar a tarefa).
+  useEffect(() => {
+    if (MODO_DEMO) return;
+    let ativo = true;
+    lerPreferencia(PREF.segundoPlano)
+      .then((v) => {
+        if (ativo) setSegundoPlano(v === '1');
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const ativarSegundoPlano = useCallback(async () => {
+    const r = await pedirSegundoPlano();
+    if (r === 'permitida') {
+      await salvarPreferencia(PREF.segundoPlano, '1');
+      setSegundoPlano(true);
+    }
+    return r;
+  }, []);
+
+  const desativarSegundoPlano = useCallback(async () => {
+    await salvarPreferencia(PREF.segundoPlano, '0');
+    setSegundoPlano(false);
+    await pararSegundoPlano();
   }, []);
 
   const dispensarAlerta = useCallback(() => {
@@ -216,10 +258,18 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
     /** Uma posição nova: célula, nível, Início, próximo trecho e, se for o caso, o alerta. */
     const tratar = (coordenada: Coordenada) => {
       const g = gradeRef.current;
-      if (!g) return; // Sem grade salva: o Mapa já avisa que os dados estão indisponíveis.
+      // Sem grade salva: não há nível nem alerta, mas o Mapa e o Início seguem a posição real
+      // (sem isso o mapa ficava parado no centro padrão). O Mapa já avisa que os dados estão indisponíveis.
+      if (!g) {
+        atualizarPosicao({ nivel: 'sem-dado', local: '', motivo: '', coordenada, celulaId: null });
+        return;
+      }
       const faixa = faixaAtual(g.faixas);
       const t = trajetoRef.current;
-      const r = processarPosicao(g, faixa, coordenada, motorRef.current, Date.now(), !!t);
+      // Consentimento revogado (F08 CA4) ou fora do horário do Perfil: o motor segue a posição,
+      // mas não alerta nem guarda pendente, e o aviso antecipado não é marcado como dado.
+      const podeAlertar = !!consentimentoRef.current && horarioPermite(preferenciasRef.current.horario);
+      const r = processarPosicao(g, faixa, coordenada, motorRef.current, Date.now(), podeAlertar);
       motorRef.current = r.estado;
 
       // Grade da API (H3) não traz o nome da rua: o celular procura uma vez por célula.
@@ -239,7 +289,8 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
         const proximo = proximoTrechoDeRisco(g, faixa, t.caminho, coordenada);
         ajustarTrajeto(() => ({ proximoTrecho: proximo }));
         // Antecedência do Perfil (F08 CA1): avisa antes de chegar ao próximo trecho de maior risco.
-        antecipado = avaliarAvisoAntecipado(proximo, r.nivel, preferenciasRef.current.antecedencia, avisadosRef.current);
+        if (podeAlertar)
+          antecipado = avaliarAvisoAntecipado(proximo, r.nivel, preferenciasRef.current.antecedencia, avisadosRef.current);
       }
 
       if (r.alerta) disparar(r.alerta);
@@ -247,9 +298,9 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
         if (antecipado) disparar(antecipado);
         // Saiu da área de Risco alto: o alerta alto pode sair da tela (CA6). O antecipado tem o próprio tempo.
         if (r.nivel !== 'alto') setAlertaAtivo((a) => (a?.nivel === 'alto' && !a.antecipado ? null : a));
-        // Durante o trajeto, a carinha do Pet acompanha o nível mesmo sem alerta (sem vibrar).
+        // A carinha do Pet acompanha o nível mesmo sem alerta (sem vibrar), com ou sem trajeto.
         const nivelAgora = r.nivel ?? 'sem-dado';
-        if (t && nivelAgora !== nivelNoPetRef.current) {
+        if (podeAlertar && nivelAgora !== nivelNoPetRef.current) {
           nivelNoPetRef.current = nivelAgora;
           enviarNivelRef.current(nivelAgora, { vibrar: false }).catch(() => {});
         }
@@ -282,25 +333,58 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
       return () => clearInterval(relogio);
     }
 
-    Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 5_000 },
-      (local) => tratar({ latitude: local.coords.latitude, longitude: local.coords.longitude }),
-    )
-      .then((s) => {
-        if (ativo) assinatura = s;
-        else s.remove();
-      })
-      .catch(() => {});
+    const seguirNoPrimeiroPlano = () =>
+      Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 5_000 },
+        (local) => tratar({ latitude: local.coords.latitude, longitude: local.coords.longitude }),
+      )
+        .then((s) => {
+          if (ativo) assinatura = s;
+          else s.remove();
+        })
+        .catch(() => {});
+
+    // Segundo plano ligado: uma tarefa do sistema entrega as posições (com o app aberto também).
+    // Se não der para iniciar (permissão retirada, Expo Go), volta a seguir só com o app aberto.
+    let usandoTarefa = false;
+    if (segundoPlano) {
+      definirOuvinte(tratar);
+      iniciarSegundoPlano()
+        .then(() => {
+          usandoTarefa = true;
+          // O efeito já foi desfeito enquanto a tarefa iniciava: não deixa a tarefa solta.
+          if (!ativo) pararSegundoPlano().catch(() => {});
+        })
+        .catch(() => {
+          definirOuvinte(null);
+          if (ativo) seguirNoPrimeiroPlano();
+        });
+    } else {
+      seguirNoPrimeiroPlano();
+    }
 
     return () => {
       ativo = false;
       assinatura?.remove();
+      if (segundoPlano) {
+        definirOuvinte(null);
+        // Reiniciar o efeito (ex.: troca de preferência) não deve deixar a tarefa solta sem ouvinte.
+        if (usandoTarefa) pararSegundoPlano().catch(() => {});
+      }
     };
-  }, [permissao, atualizarPosicao, ajustarTrajeto, disparar]);
+  }, [permissao, segundoPlano, atualizarPosicao, ajustarTrajeto, disparar]);
 
   const valor = useMemo(
-    () => ({ permissao, pedirLocalizacao, alertaAtivo, dispensarAlerta }),
-    [permissao, pedirLocalizacao, alertaAtivo, dispensarAlerta],
+    () => ({
+      permissao,
+      pedirLocalizacao,
+      alertaAtivo,
+      dispensarAlerta,
+      segundoPlano,
+      ativarSegundoPlano,
+      desativarSegundoPlano,
+    }),
+    [permissao, pedirLocalizacao, alertaAtivo, dispensarAlerta, segundoPlano, ativarSegundoPlano, desativarSegundoPlano],
   );
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

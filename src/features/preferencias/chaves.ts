@@ -29,6 +29,8 @@ export const PREF = {
   instalacaoId: 'instalacao_id',
   /** Horários (ISO, JSON) dos pedidos de ajuda da última hora, para o limite de 3 por hora (F09 CA7). */
   pedidosAjuda: 'pedidos_ajuda',
+  /** A pessoa ligou o alerta em segundo plano (localização com a tela apagada). Valor '1'. */
+  segundoPlano: 'segundo_plano',
   /** Preferências de alerta do Perfil (F08 CA1, CA2), em JSON: vibração, som, antecedência e horário. */
   alertas: 'preferencias_alertas',
 } as const;

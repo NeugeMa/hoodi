@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
-import { ESTADO_INICIAL, INTERVALO_MINIMO_MS, processarPosicao } from '../src/features/alerta/motor.ts';
+import { ESTADO_INICIAL, INTERVALO_MINIMO_MS, processarPosicao, proximoTrechoDeRisco } from '../src/features/alerta/motor.ts';
 import { lerEvento, montarEstado, montarSimples, NIVEL_PET, PADRAO, EXPRESSAO, Sequencia, TIPO, paraBase64, deBase64 } from '../src/features/pet/protocolo.ts';
 
 // Grade de teste: 3 células lado a lado (oeste→leste), uma faixa que vale o dia todo.
@@ -41,7 +41,7 @@ test('motor: pendente sobrevive a "sem dado" no meio', () => {
   assert.deepEqual(andar([[A, 0], [B, 1_000], [C, 31_000], [D, 60_000], [C, 1_000 + INTERVALO_MINIMO_MS]]), [null, 'medio', null, null, 'alto']);
 });
 
-test('motor: sem trajeto nunca alerta nem deixa pendente', () => {
+test('motor: sem permissão para alertar (consentimento/horário) nunca alerta nem deixa pendente', () => {
   let e = ESTADO_INICIAL;
   for (const [p, t] of [[A, 0], [B, 1_000], [C, 2_000]]) {
     const r = processarPosicao(grade, faixa, p, e, t, false);
@@ -49,6 +49,41 @@ test('motor: sem trajeto nunca alerta nem deixa pendente', () => {
     e = r.estado;
   }
   assert.equal(e.pendente, false);
+});
+
+test('motor: alerta ambiente não depende de trajeto (a permissão é o único gate)', () => {
+  // andar() já passa podeAlertar=true sem nenhum trajeto: a subida alerta.
+  assert.deepEqual(andar([[A, 0], [C, 5_000]]), [null, 'alto']);
+});
+
+test('motor: alerta barrado por permissão não deixa pendente e o estado segue a posição', () => {
+  let e = ESTADO_INICIAL;
+  const r1 = processarPosicao(grade, faixa, A, e, 0, false);
+  e = r1.estado;
+  const r2 = processarPosicao(grade, faixa, C, e, 5_000, false);
+  assert.equal(r2.alerta, null);
+  assert.equal(r2.estado.pendente, false);
+  assert.equal(r2.estado.ultimoNivelConhecido, 'alto');
+  // Permitido de novo, ainda em C: não repete (a subida já passou); sobe para um novo nível só ao descer e subir.
+  const r3 = processarPosicao(grade, faixa, C, r2.estado, 10_000, true);
+  assert.equal(r3.alerta, null);
+});
+
+test('motor: primeira leitura já em Risco alto alerta uma vez; em médio não', () => {
+  const a = processarPosicao(grade, faixa, C, ESTADO_INICIAL, 0, true);
+  assert.equal(a.alerta?.nivel, 'alto');
+  const b = processarPosicao(grade, faixa, C, a.estado, 1_000, true);
+  assert.equal(b.alerta, null);
+  assert.equal(processarPosicao(grade, faixa, B, ESTADO_INICIAL, 0, true).alerta, null);
+});
+
+test('proximoTrechoDeRisco: médio mais perto não é escondido por um alto mais longe', () => {
+  const caminho = [A, B, C];
+  const prox = proximoTrechoDeRisco(grade, faixa, caminho, A);
+  assert.equal(prox?.nivel, 'medio');
+  assert.equal(prox?.celulaId, 'B');
+  // Já em B, o próximo trecho passa a ser o alto.
+  assert.equal(proximoTrechoDeRisco(grade, faixa, caminho, B)?.nivel, 'alto');
 });
 
 test('protocolo v1: estado do nível alto = mesmos bytes que o firmware espera', () => {

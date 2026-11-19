@@ -1,17 +1,17 @@
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Path, Warning, WarningCircle, X } from '@/components/icones';
+import { Warning, WarningCircle, X } from '@/components/icones';
 import { Texto } from '@/components/ui/texto';
 import { useAcompanhamento } from '@/features/alerta/acompanhamento-context';
-import { espaco, raio, sombra, tamanho } from '@/theme/tokens';
+import { espaco, raio, sombra } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
 /**
  * Alerta de risco na tela (F07, design system v3 "Alerta de risco").
- * Risco alto: fundo vermelho, "Ver desvio", fica até a pessoa agir ou sair da área (CA6).
+ * Risco alto: fundo vermelho, fica até a pessoa fechar ou sair da área (CA6).
+ * Sem botão de rota: a pessoa a pé não usa o celular na rua; planejar o caminho é antes de sair.
  * Risco médio: fundo âmbar claro, sem ação obrigatória; some sozinho.
  * Entra deslizando de cima, sobre qualquer tela.
  */
@@ -25,12 +25,6 @@ export function AvisoRisco() {
   const fundo = alto ? cores.capuz : cores.atencaoFundo;
   const texto = alto ? cores.sobreCapuz : cores.grafite;
   const Icone = alto ? Warning : WarningCircle;
-
-  function verDesvio() {
-    // Abre o Comparar rotas (F04) para achar um caminho de menor risco registrado.
-    dispensarAlerta();
-    router.push('/comparar-rotas');
-  }
 
   return (
     <View pointerEvents="box-none" style={[styles.camada, { top: insets.top + espaco[2] }]}>
@@ -57,20 +51,6 @@ export function AvisoRisco() {
             <X size={20} color={texto} weight="bold" />
           </Pressable>
         </View>
-
-        {alto ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ver desvio"
-            onPress={verDesvio}
-            style={({ pressed }) => [
-              styles.acao,
-              { backgroundColor: cores.papelElevado, transform: [{ scale: pressed ? 0.98 : 1 }] },
-            ]}>
-            <Path size={20} color={cores.grafite} weight="bold" />
-            <Texto variante="corpoForte">Ver desvio</Texto>
-          </Pressable>
-        ) : null}
       </Animated.View>
     </View>
   );
@@ -82,12 +62,4 @@ const styles = StyleSheet.create({
   linha: { flexDirection: 'row', gap: espaco[3], alignItems: 'flex-start' },
   textos: { flex: 1, gap: 2 },
   fechar: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  acao: {
-    minHeight: tamanho.toqueMin,
-    borderRadius: raio.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: espaco[2],
-  },
 });
