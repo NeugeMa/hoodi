@@ -9,18 +9,27 @@
 </p>
 
 
-**Sumário:** [Integrantes](#integrantes) · [O projeto](#o-projeto) · [Como as partes se conectam](#como-as-partes-se-conectam) · [Para avaliar](#para-avaliar-modo-demonstração) · [Como rodar](#como-rodar) · [Contatos e Pedir ajuda](#contatos-de-segurança-e-pedir-ajuda) · [Documentação](#documentação) · [Prints](docs/design-e-acessibilidade.md#prints)
-
+**Sumário:** [Integrantes](#integrantes) · [Documentação](#documentação) · [Hoodi](#hoodi) · [Demonstração](#demonstração) · [Como rodar](#como-rodar)
 ## Integrantes
 
-| Nome | RM | Parte no projeto |
+| Nome | RM | Produções |
 |---|---|---|
 | Abner de Paiva Barbosa | RM558468 | API .NET e Hoodi Pet |
 | Beatriz Vieira de Novais | RM554746 | Infra (VM Linux na Azure) e Hoodi Pet |
 | Fernando Luiz Silva Antonio | RM555201 | ML (grade de risco) e Pitch |
 | Mariana Neugebauer Dourado | RM550494 | App, Design System e QA |
 
-## O projeto
+## Documentação
+
+| Documento | O que tem |
+|---|---|
+| [Funcionalidades](docs/funcionalidades.md) | Cada tela e feature (F01 a F10), com os critérios de aceite que atende |
+| [Integrações](docs/integracoes.md) | API local passo a passo, modo demonstração, grade de risco, protocolo Bluetooth do Pet e development build |
+| [Design e acessibilidade](docs/design-e-acessibilidade.md) | Design system v3, prints de todas as telas, ícone e splash, acessibilidade |
+| [Para desenvolver](docs/desenvolvimento.md) | Estrutura de pastas, banco local e como contribuir |
+| [Segurança e produção](docs/seguranca-producao.md) | O que está travado em produção e os limites conhecidos |
+
+## Hoodi
 
 | Campo | Resposta |
 |---|---|
@@ -68,7 +77,7 @@
 | **Hoodi Pet** | Chaveiro com ESP32: vibra e mostra a carinha do risco; o botão 3 pede ajuda | Repositório do Abner (`iot/hoodi-pet`) |
 | **Infra** | VM Linux na Azure com nginx e HTTPS (Let's Encrypt) na frente da API | **https://hoodi-api.canadacentral.cloudapp.azure.com** |
 
-## Para avaliar (modo demonstração)
+## Demonstração
 
 Dá para usar o app inteiro **sem API, GPS nem Bluetooth**, com **dados simulados** e o selo **"Demonstração · dados simulados"** sempre na tela.
 
@@ -207,13 +216,3 @@ Telas e critérios de aceite em [docs/funcionalidades.md](docs/funcionalidades.m
 | `npm run verificar:eas` | Garante que o build de produção não liga o modo demonstração |
 
 O CI do GitHub roda lint, testes, typecheck e `verificar:eas` em todo pull request. No Windows, um teste da grade pode falhar só porque o Git troca o fim de linha do CSV de exemplo (no CI, em Linux, passa).
-
-## Documentação
-
-| Documento | O que tem |
-|---|---|
-| [Funcionalidades](docs/funcionalidades.md) | Cada tela e feature (F01 a F10), com os critérios de aceite que atende |
-| [Integrações](docs/integracoes.md) | API local passo a passo, modo demonstração, grade de risco, protocolo Bluetooth do Pet e development build |
-| [Design e acessibilidade](docs/design-e-acessibilidade.md) | Design system v3, prints de todas as telas, ícone e splash, acessibilidade |
-| [Para desenvolver](docs/desenvolvimento.md) | Estrutura de pastas, banco local e como contribuir |
-| [Segurança e produção](docs/seguranca-producao.md) | O que está travado em produção e os limites conhecidos |
