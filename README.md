@@ -9,7 +9,7 @@
 </p>
 
 
-**Sumário:** [Integrantes](#integrantes) · [Documentação](#documentação) · [Tecnologias](#tecnologias) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Vídeo](#vídeo) · [Para avaliar](#para-avaliar) · [Prints](#prints) · [Como rodar](#como-rodar)
+**Sumário:** [Integrantes](#integrantes) · [Documentação](#documentação) · [Tecnologias](#tecnologias) · [Ficha](#ficha-da-citizentech) · [ODS](#ods) · [Para avaliar](#para-avaliar) · [Prints](docs/design-e-acessibilidade.md#prints) · [Como rodar](#como-rodar)
 
 ## Integrantes
 
@@ -26,9 +26,8 @@
 |---|---|
 | [Funcionalidades](docs/funcionalidades.md) | Cada tela e feature (F01 a F10), com os critérios de aceite que atende |
 | [Integrações](docs/integracoes.md) | API local, modo demonstração, grade de risco, protocolo Bluetooth do Pet e development build |
-| [Design e acessibilidade](docs/design-e-acessibilidade.md) | Como o app segue o design system v3, ícone e splash, acessibilidade |
+| [Design e acessibilidade](docs/design-e-acessibilidade.md) | Como o app segue o design system v3, prints de todas as telas, ícone e splash, acessibilidade |
 | [Para desenvolver](docs/desenvolvimento.md) | Estrutura de pastas, banco local e como contribuir |
-| [prompts.md](prompts.md) | Registro do uso de IA (regra da GS) |
 
 ## Tecnologias
 
@@ -98,21 +97,6 @@ Abra **http://localhost:8081/?demo=1**. O modo fica ligado nesse navegador até 
 7. Em **Perfil > Dados e privacidade**, veja o que fica guardado no aparelho.
 
 **O que é simulado:** a API (contas, contatos, pedido de ajuda e rotas), a grade de risco em volta da FIAP Paulista e a caminhada. Nada sai do aparelho, e as contas, os contatos e os pedidos simulados voltam ao início quando o app é recarregado. O selo **"Demonstração · dados simulados"** fica sempre no topo da tela, para nada se passar por dado real. Bluetooth (Hoodi Pet) e push precisam do development build e da API: veja [Como rodar](#como-rodar).
-
-## Prints
-
-No navegador, no [modo demonstração](#3-modo-demonstração-no-navegador) (dados simulados), em tamanho de celular.
-
-| Início | Mapa | Comparar rotas | Em trajeto |
-|:-:|:-:|:-:|:-:|
-| <img src="docs/prints/inicio.png" width="180" alt="Início" /> | <img src="docs/prints/mapa.png" width="180" alt="Mapa de risco" /> | <img src="docs/prints/comparar-rotas.png" width="180" alt="Comparar rotas" /> | <img src="docs/prints/inicio-em-trajeto.png" width="180" alt="Início em trajeto" /> |
-| **Mapa com o trajeto** | **Alerta de risco** | **Pedir ajuda** | **Pedido registrado** |
-| <img src="docs/prints/mapa-com-trajeto.png" width="180" alt="Mapa com o trajeto" /> | <img src="docs/prints/alerta-risco-medio.png" width="180" alt="Alerta de risco médio" /> | <img src="docs/prints/pedir-ajuda.png" width="180" alt="Pedir ajuda" /> | <img src="docs/prints/pedido-registrado.png" width="180" alt="Pedido registrado" /> |
-| **Entrar** | **Criar conta** | **Contatos** | **Perfil** |
-| <img src="docs/prints/entrar.png" width="180" alt="Entrar" /> | <img src="docs/prints/criar-conta.png" width="180" alt="Criar conta" /> | <img src="docs/prints/contatos.png" width="180" alt="Contatos de segurança" /> | <img src="docs/prints/perfil.png" width="180" alt="Perfil" /> |
-| **Abertura** | **Permissões** | **Relógio** | **Dados e privacidade** |
-| <img src="docs/prints/intro.png" width="180" alt="Abertura animada com a logo e o nome Hoodi" /> | <img src="docs/prints/permissoes.png" width="180" alt="Permissões" /> | <img src="docs/prints/relogio.png" width="180" alt="Configurar o relógio" /> | <img src="docs/prints/privacidade.png" width="180" alt="Dados e privacidade" /> |
-
 
 ## Como rodar
 

@@ -26,6 +26,20 @@ Regras visuais combinadas pela equipe (além do v3):
 - **Micro-interações com Lottie**, com animações aprovadas antes de entrar.
 - **Sem título no topo das telas:** a barra de navegação já diz onde você está; telas fora das abas têm só o botão de voltar.
 
+## Prints
+
+No navegador, no [modo demonstração](../README.md#3-modo-demonstração-no-navegador) (dados simulados), em tamanho de celular.
+
+| Início | Mapa | Comparar rotas | Em trajeto |
+|:-:|:-:|:-:|:-:|
+| <img src="prints/inicio.png" width="180" alt="Início" /> | <img src="prints/mapa.png" width="180" alt="Mapa de risco" /> | <img src="prints/comparar-rotas.png" width="180" alt="Comparar rotas" /> | <img src="prints/inicio-em-trajeto.png" width="180" alt="Início em trajeto" /> |
+| **Mapa com o trajeto** | **Alerta de risco** | **Pedir ajuda** | **Pedido registrado** |
+| <img src="prints/mapa-com-trajeto.png" width="180" alt="Mapa com o trajeto" /> | <img src="prints/alerta-risco-medio.png" width="180" alt="Alerta de risco médio" /> | <img src="prints/pedir-ajuda.png" width="180" alt="Pedir ajuda" /> | <img src="prints/pedido-registrado.png" width="180" alt="Pedido registrado" /> |
+| **Entrar** | **Criar conta** | **Contatos** | **Perfil** |
+| <img src="prints/entrar.png" width="180" alt="Entrar" /> | <img src="prints/criar-conta.png" width="180" alt="Criar conta" /> | <img src="prints/contatos.png" width="180" alt="Contatos de segurança" /> | <img src="prints/perfil.png" width="180" alt="Perfil" /> |
+| **Abertura** | **Permissões** | **Relógio** | **Dados e privacidade** |
+| <img src="prints/intro.png" width="180" alt="Abertura animada com a logo e o nome Hoodi" /> | <img src="prints/permissoes.png" width="180" alt="Permissões" /> | <img src="prints/relogio.png" width="180" alt="Configurar o relógio" /> | <img src="prints/privacidade.png" width="180" alt="Dados e privacidade" /> |
+
 
 ## Ícone e splash
 

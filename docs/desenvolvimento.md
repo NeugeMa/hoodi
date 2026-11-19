@@ -73,4 +73,3 @@ Tudo fica só no aparelho. Na pré-visualização web, que não tem SQLite, os r
 - Abra um pull request para a `main` e peça revisão de quem cuida da outra metade.
 - Antes do PR, rode `npm run typecheck` e `npm run lint`.
 - Use os componentes de `src/components/ui` e os tokens de `src/theme` em vez de cores e tamanhos soltos.
-- Registre os prompts de IA usados em `prompts.md` (regra da GS).
