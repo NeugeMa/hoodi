@@ -7,26 +7,15 @@ import { CheckCircle, Clock, CloudSlash, Info, Siren, Users, Warning } from '@/c
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
-import { ErroApi, mensagemDeFalha } from '@/features/api/cliente';
-import {
-  chaveDoPedido,
-  horaCurta,
-  MAX_PEDIDOS_POR_HORA,
-  posicaoAproximada,
-  registrarPedidoFeito,
-  situacaoDoLimite,
-} from '@/features/ajuda/pedido-ajuda';
-import { enviarPanico, statusDoPanico, type PanicoRegistrado, type ResumoDespachos } from '@/features/ajuda/panico-api';
+import { enviarPedidoDeAjuda, retirarResultadoDoPet, type ResultadoPedido } from '@/features/ajuda/enviar-pedido';
+import { horaCurta, MAX_PEDIDOS_POR_HORA, situacaoDoLimite } from '@/features/ajuda/pedido-ajuda';
+import { statusDoPanico, type PanicoRegistrado, type ResumoDespachos } from '@/features/ajuda/panico-api';
 import { useConta } from '@/features/conta/conta-context';
 import { useContatos } from '@/features/contatos/contatos-context';
 import { espaco, raio, tamanho } from '@/theme/tokens';
 import { useTema } from '@/theme/use-tema';
 
-type Estado =
-  | { tipo: 'confirmar' }
-  | { tipo: 'enviando' }
-  | { tipo: 'registrado'; pedido: PanicoRegistrado }
-  | { tipo: 'nao-enviado'; motivo: 'sem-internet' | 'limite' | 'falha'; texto: string };
+type Estado = { tipo: 'confirmar' } | { tipo: 'enviando' } | ResultadoPedido;
 
 /** Nunca diz "recebido": push enviado não prova que chegou (contrato da API). */
 function textoDoResumo(r: ResumoDespachos) {
@@ -53,7 +42,8 @@ export default function PedirAjudaScreen() {
   const { cores } = useTema();
   const { usuario } = useConta();
   const { meusContatos } = useContatos();
-  const [estado, setEstado] = useState<Estado>({ tipo: 'confirmar' });
+  // Aberta pelo botão do Pet: o pedido já foi feito, a tela mostra o resultado.
+  const [estado, setEstado] = useState<Estado>(() => retirarResultadoDoPet() ?? { tipo: 'confirmar' });
   const [limite, setLimite] = useState<{ restantes: number; liberaEm: Date | null }>({
     restantes: MAX_PEDIDOS_POR_HORA,
     liberaEm: null,
@@ -69,40 +59,15 @@ export default function PedirAjudaScreen() {
   const agora = new Date().toISOString();
 
   async function enviar() {
-    // F09 CA7: no quarto pedido da hora, explica o limite e não envia.
-    const situacao = await situacaoDoLimite();
-    setLimite(situacao);
-    if (situacao.restantes === 0) {
-      setEstado({
-        tipo: 'nao-enviado',
-        motivo: 'limite',
-        texto: `Você já enviou ${MAX_PEDIDOS_POR_HORA} pedidos na última hora, o limite do Hoodi. Este pedido não foi enviado.${
-          situacao.liberaEm ? ` Você pode pedir de novo às ${horaCurta(situacao.liberaEm.toISOString())}.` : ''
-        }`,
-      });
-      AccessibilityInfo.announceForAccessibility('Pedido não enviado. Limite de pedidos por hora.');
-      return;
-    }
-
     setEstado({ tipo: 'enviando' });
-    try {
-      const pedido = await enviarPanico(chaveDoPedido(), await posicaoAproximada());
-      if (!pedido.reutilizado) await registrarPedidoFeito(pedido.registradoEm);
-      setLimite(await situacaoDoLimite());
-      setEstado({ tipo: 'registrado', pedido });
-      AccessibilityInfo.announceForAccessibility(`Pedido de ajuda registrado às ${horaCurta(pedido.registradoEm)}.`);
-    } catch (e) {
-      // F09 CA8: sem internet, avisa na hora e nunca mostra "enviado".
-      const semInternet = e instanceof ErroApi && e.tipo === 'sem-internet';
-      setEstado({
-        tipo: 'nao-enviado',
-        motivo: semInternet ? 'sem-internet' : 'falha',
-        texto: semInternet
-          ? 'Você está sem internet e o pedido não foi enviado. Se puder, ligue para alguém de confiança.'
-          : `${mensagemDeFalha(e)} O pedido não foi enviado.`,
-      });
-      AccessibilityInfo.announceForAccessibility('Pedido de ajuda não enviado.');
-    }
+    const resultado = await enviarPedidoDeAjuda();
+    setLimite(await situacaoDoLimite());
+    setEstado(resultado);
+    AccessibilityInfo.announceForAccessibility(
+      resultado.tipo === 'registrado'
+        ? `Pedido de ajuda registrado às ${horaCurta(resultado.pedido.registradoEm)}.`
+        : 'Pedido de ajuda não enviado.',
+    );
   }
 
   async function atualizarStatus(pedido: PanicoRegistrado) {
