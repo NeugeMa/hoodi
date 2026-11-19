@@ -54,6 +54,8 @@ export type CelulaGrade = {
 
 export type GradeRisco = {
   versao: string;
+  /** SHA-256 do CSV conferido no download; serve para detectar troca de conteúdo com a mesma versão. */
+  sha256?: string;
   /** Data de publicação dos dados (ISO). Aparece como "Dados de 3 nov.". */
   publicadoEm: string;
   /** Sempre "SSP-SP" (só dados oficiais). */

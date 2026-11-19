@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ import { MapaRisco } from '@/components/mapa/mapa-risco';
 import { DetalheCelula, PainelMapa } from '@/components/mapa/painel-mapa';
 import { OndeEstou } from '@/components/risco/onde-estou';
 import { Aviso } from '@/components/ui/aviso';
+import { Botao } from '@/components/ui/botao';
 import { Texto } from '@/components/ui/texto';
 import type { FalhaDownload } from '@/features/grade/grade-api';
 import { useGrade } from '@/features/grade/grade-context';
@@ -53,7 +55,7 @@ export default function MapaScreen() {
   const { cores } = useTema();
   const insets = useSafeAreaInsets();
   const { grade, carregando, falha, atualizar } = useGrade();
-  const { posicao, trajeto } = useTrajeto();
+  const { posicao, trajeto, previa, definirPrevia } = useTrajeto();
   const [selecionada, setSelecionada] = useState<CelulaGrade | null>(null);
   const [alturaPainel, setAlturaPainel] = useState(0);
   // Nome da rua da célula tocada (a grade da API só traz o código H3: o celular procura).
@@ -103,7 +105,7 @@ export default function MapaScreen() {
         faixa={faixa}
         posicao={posicao?.coordenada ?? null}
         centroPadrao={CENTRO_PERIMETRO}
-        caminho={trajeto?.caminho ?? []}
+        caminho={trajeto?.caminho ?? previa ?? []}
         selecionadaId={selecionada?.id ?? null}
         onSelecionar={setSelecionada}
         margemInferior={alturaPainel}
@@ -131,6 +133,21 @@ export default function MapaScreen() {
             dadosDe={grade.periodo ? periodoMeses(grade.periodo.inicio, grade.periodo.fim) : diaMesAno(grade.publicadoEm)}
             onFechar={() => setSelecionada(null)}
           />
+        ) : previa && !trajeto ? (
+          <>
+            <Texto variante="corpoForte">Pré-visualização da rota</Texto>
+            <Texto variante="legenda">O trajeto só começa quando você tocar em Iniciar trajeto, na tela Comparar rotas.</Texto>
+            <LegendaMapa />
+            <Botao
+              rotulo="Voltar às rotas"
+              variante="secundario"
+              onPress={() => {
+                definirPrevia(null);
+                if (router.canGoBack()) router.back();
+                else router.navigate('/comparar-rotas');
+              }}
+            />
+          </>
         ) : (
           <>
             <OndeEstou

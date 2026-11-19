@@ -1,0 +1,33 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: ['**']
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:pet
+      - run: npm run typecheck
+      - name: perfis EAS (produção fecha o modo demo)
+        run: npm run verificar:eas
+      - name: vulnerabilidades críticas em dependências de produção (bloqueia)
+        run: npm audit --omit=dev --audit-level=critical
+      - name: vulnerabilidades altas em dependências de produção (só relatório; pendência APP-01)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+  contrato-grade:
+    # A fixture v3 do app é cópia do pacote publicado pelo ML: confere o SHA-256 pinado no teste.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "e33bd004ffcf0c47378ef0c9518bdf19a9ea84ca007222d798a2003a7c71c0da  testes/fixtures/risco_h3_faixa_v3.csv" | sha256sum -c -
+          python3 -c "import json;m=json.load(open('testes/fixtures/manifest_v3.json'));assert m['csv_sha256']=='e33bd004ffcf0c47378ef0c9518bdf19a9ea84ca007222d798a2003a7c71c0da' and m['contrato_versao']==3"

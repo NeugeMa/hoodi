@@ -43,7 +43,17 @@ export function prepararNotificacoes() {
     if (atual.granted) return true;
     const pedido = await Notifications.requestPermissionsAsync();
     return pedido.granted;
-  })();
+  })().then(
+    (concedida) => {
+      // Negada agora, a pessoa pode permitir depois nas configurações: tenta de novo na próxima vez.
+      if (!concedida) preparado = null;
+      return concedida;
+    },
+    (erro) => {
+      preparado = null; // falhou (canal, sistema): não guarda a falha para sempre
+      throw erro;
+    },
+  );
   return preparado;
 }
 

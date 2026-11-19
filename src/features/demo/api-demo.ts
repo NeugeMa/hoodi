@@ -103,12 +103,12 @@ function resumo(p: Pedido) {
 }
 
 /** Rotas no formato do contrato v0.6 (POST /v1/rotas/avaliar). */
-function rotas() {
+function rotas(modo: string) {
   const rota = (rotaId: string, caminho: typeof CAMINHO_DIRETO, acumulada: number, posicao: number) => {
     const metrosTotal = metrosDoCaminho(caminho);
     return {
       rotaId,
-      duracaoSegundos: Math.round(metrosTotal / 1.3), // ~ 4,7 km/h
+      duracaoSegundos: Math.round(metrosTotal / (modo === 'carro' ? 6 : 1.3)), // ~ 4,7 km/h a pé; ~ 22 km/h de carro
       geometria: caminho,
       posicao,
       faixa: 3,
@@ -125,6 +125,7 @@ function rotas() {
     };
   };
   return {
+    modo: modo === 'carro' ? 'carro' : 'pe',
     situacao: 'concluida',
     motivo: null,
     versaoGrade: 'demonstracao',
@@ -288,7 +289,7 @@ export function responderDemo(metodo: string, caminho: string, corpo: unknown, t
   }
 
   // ---- Rotas (F04) ----
-  if (rota === 'POST /v1/rotas/avaliar') return { status: 200, corpo: rotas() };
+  if (rota === 'POST /v1/rotas/avaliar') return { status: 200, corpo: rotas(c.modo === 'carro' ? 'carro' : 'pe') };
 
   return erro(404, 'NAO_ENCONTRADO');
 }
