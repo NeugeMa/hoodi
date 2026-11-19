@@ -2,6 +2,7 @@ import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
 
 import { API_URL } from '@/features/api/cliente';
 
+import { contratoAceito } from './contrato';
 import { CsvInvalido, gradeDoCsv } from './grade-h3';
 import type { GradeRisco, VersaoGrade } from './tipos';
 
@@ -54,6 +55,7 @@ export async function buscarVersao(): Promise<VersaoGrade> {
   try {
     const v = JSON.parse(texto) as VersaoGrade;
     if (!v.versao || !/^[0-9a-f]{64}$/i.test(v.sha256)) throw new Error('versão inválida');
+    if (!contratoAceito(v)) throw new Error('contrato desconhecido');
     return v;
   } catch {
     throw new ErroDownload('erro');
