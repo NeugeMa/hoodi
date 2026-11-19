@@ -28,11 +28,12 @@ type OndeEstouProps = {
 
 /** Conteúdo padrão: onde você está agora. */
 export function OndeEstou({ nivel, local, explicacao }: OndeEstouProps) {
-  const titulo = nivel ? (local ?? NIVEL[nivel].nome) : 'Localizando você';
+  // Local vazio (ex.: posição sem grade) cai no nome do nível, para o título nunca ficar em branco.
+  const titulo = nivel ? local || NIVEL[nivel].nome : 'Localizando você';
   return (
     <View
       accessible
-      accessibilityLabel={`Onde você está agora: ${nivel ? `${NIVEL[nivel].nome}, ${local ?? ''}` : 'localizando'}. ${explicacao}`}
+      accessibilityLabel={`Onde você está agora: ${nivel ? `${NIVEL[nivel].nome}${local ? `, ${local}` : ''}` : 'localizando'}. ${explicacao}`}
       accessibilityLiveRegion="polite"
       style={styles.bloco}>
       <View style={styles.topo}>

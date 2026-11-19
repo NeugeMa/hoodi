@@ -258,7 +258,12 @@ export function AcompanhamentoProvider({ children }: { children: ReactNode }) {
     /** Uma posição nova: célula, nível, Início, próximo trecho e, se for o caso, o alerta. */
     const tratar = (coordenada: Coordenada) => {
       const g = gradeRef.current;
-      if (!g) return; // Sem grade salva: o Mapa já avisa que os dados estão indisponíveis.
+      // Sem grade salva: não há nível nem alerta, mas o Mapa e o Início seguem a posição real
+      // (sem isso o mapa ficava parado no centro padrão). O Mapa já avisa que os dados estão indisponíveis.
+      if (!g) {
+        atualizarPosicao({ nivel: 'sem-dado', local: '', motivo: '', coordenada, celulaId: null });
+        return;
+      }
       const faixa = faixaAtual(g.faixas);
       const t = trajetoRef.current;
       // Consentimento revogado (F08 CA4) ou fora do horário do Perfil: o motor segue a posição,
