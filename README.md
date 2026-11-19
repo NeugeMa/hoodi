@@ -212,7 +212,7 @@ Telas e critérios de aceite em [docs/funcionalidades.md](docs/funcionalidades.m
 | `npm run web` | Abre o app no navegador |
 | `npm run typecheck` | Confere os tipos do TypeScript |
 | `npm run lint` | Roda o ESLint |
-| `npm run test:pet` | 59 testes das regras sem tela: protocolo do Pet, alerta, grade H3, rotas, lugares e modo demonstração |
+| `npm run test:pet` | 61 testes das regras sem tela: protocolo do Pet, alerta, grade H3, contrato da grade, rotas, lugares e modo demonstração |
 | `npm run verificar:eas` | Garante que o build de produção não liga o modo demonstração |
 
 O CI do GitHub roda lint, testes, typecheck e `verificar:eas` em todo pull request. No Windows, um teste da grade pode falhar só porque o Git troca o fim de linha do CSV de exemplo (no CI, em Linux, passa).

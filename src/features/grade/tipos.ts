@@ -22,6 +22,8 @@ export type VersaoGrade = {
 
 /** Parte do manifesto do produtor que o app usa. */
 export type ManifestoProdutor = {
+  /** Versão do contrato de dados (2 = entrega; 3 = semestral, fase 2). */
+  contrato_versao?: number;
   fonte?: { orgao?: string };
   /** Período dos registros, ex.: ["2026-01-01", "2026-09-30"]. */
   janela_dados?: [string, string];
