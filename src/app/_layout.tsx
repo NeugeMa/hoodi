@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { AvisoRisco } from '@/components/alerta/aviso-risco';
 import { MolduraDemo } from '@/components/demo/selo-demo';
 import { IntroAnimada } from '@/components/intro/intro-animada';
+import { usePedidoPeloPet } from '@/features/ajuda/pedido-pelo-pet';
 import { usePushPedidosAjuda } from '@/features/ajuda/push';
 import { AcompanhamentoProvider } from '@/features/alerta/acompanhamento-context';
 import { ContaProvider, useConta } from '@/features/conta/conta-context';
@@ -79,6 +80,8 @@ function Navegacao() {
   const logado = estado === 'logado';
   // Push dos pedidos de ajuda (F09): registra o aparelho e abre o pedido ao tocar no aviso.
   usePushPedidosAjuda(logado);
+  // Segurar o botão de ajuda do Hoodi Pet por 3 s envia o pedido de ajuda direto (F09).
+  usePedidoPeloPet(logado);
   // Ao abrir: animação de introdução (logo e "Hoodi") por cima do Início, que já carrega embaixo.
   const [intro, setIntro] = useState(true);
 

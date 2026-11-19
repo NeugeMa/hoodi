@@ -173,6 +173,8 @@ Especificação completa no repositório da API: `iot/hoodi-pet/docs/PROTOCOLO_B
 
 **Reforço do alerta:** quando o Pet vibra por risco, o app espera o "vi" (um clique no botão do Pet). Sem clique em 20 s, o Pet vibra de novo e o celular também (uma vez). Fora dessa espera, o clique só acende a tela do Pet. **Pet desconectado na hora do alerta:** o celular vibra direto. **"Avisar no celular também"** (Perfil): o celular vibra junto com o Pet em todo alerta.
 
+**Pedido de ajuda pelo Pet:** o Pet tem 3 botões; segurar o botão 3 por 3 s chega no app como o mesmo evento de antes (`2`, pressão longa). O app envia o `POST /v1/panico` direto (com `origem: "app"`, o token da conta e a mesma chave de idempotência do botão do app) e responde no Pet com o comando **Identificar** (5 vibrações rápidas) quando o pedido é registrado. Se não sai, o Pet não vibra de novo: o celular vibra longo e avisa. Detalhes em [funcionalidades](funcionalidades.md#contatos-de-segurança-e-pedir-ajuda-f09).
+
 
 ## Development build (Bluetooth e push)
 
