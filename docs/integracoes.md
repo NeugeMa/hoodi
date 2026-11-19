@@ -6,7 +6,7 @@ API .NET do Abner, modo demonstração, grade de risco, Bluetooth com o Hoodi Pe
 
 ## Rodar com a API local
 
-Para testar com **conta de verdade** (criar conta, confirmar pelo e-mail, entrar e continuar logado), duas coisas rodam no PC: a **API** e o **Mailpit** (recebe os e-mails). O app (este repositório) roda à parte, com o `npm start`. Para só ver o app funcionando, sem nada disso, use o [modo demonstração](#modo-demonstração-no-navegador-vídeo-e-prints).
+Para testar com **conta de verdade** (criar conta, confirmar pelo e-mail, entrar e continuar logado), duas coisas rodam no PC: a **API** e o **Mailpit** (recebe os e-mails). O app (este repositório) roda à parte, com o `npm start`. Para só ver o app funcionando, sem nada disso, use o [modo demonstração](#modo-demonstração-no-navegador).
 
 **Pré-requisitos:** [.NET 10 SDK](https://dotnet.microsoft.com/download), [Node.js](https://nodejs.org/) 20+ e o Mailpit (passo 2). Celular e PC na mesma rede Wi-Fi.
 
@@ -88,9 +88,9 @@ O mesmo vale para **Esqueci a senha** (link `hoodi://redefinir-senha#token=`) e 
 | Grade de risco do Mapa (`/v1/risco/versao-atual` e `/v1/risco/grade`) | **Na API**, depois de publicada (passo 3). Pública: não precisa de login |
 | Comparar rotas (`/v1/rotas/avaliar`) | **Na API**, com o provedor HeiGIT. Precisa da chave do provedor na API |
 
-## Modo demonstração no navegador (vídeo e prints)
+## Modo demonstração no navegador
 
-Para gravar o vídeo (por exemplo com o Claude Motion) ou tirar prints no **localhost**, o app tem um modo com **dados simulados**, sempre sinalizado na tela com o selo **"Demonstração · dados simulados"**.
+Para avaliar o app ou tirar prints no **localhost**, o app tem um modo com **dados simulados**, sempre sinalizado na tela com o selo **"Demonstração · dados simulados"**.
 
 ```bash
 npx expo start --web --port 8081
@@ -108,7 +108,7 @@ Depois abra **http://localhost:8081/?demo=1**. O modo fica ligado até abrir com
 | Contatos | Ana (confirmada), um convite pendente e Bruno (de quem você é contato, com um pedido de ajuda recebido) |
 | Mapa | No navegador, a grade é desenhada em SVG (mapa esquemático, sem ruas); no celular aparece o mapa de verdade |
 
-Roteiro sugerido para o vídeo: Permissões → Configurar o relógio → Início → Mapa → Entrar (Preencher) → Comparar rotas → Iniciar trajeto → esperar o aviso e o alerta → Mapa com o trajeto → Histórico → Perfil → Contatos → Pedir ajuda. Para o tema escuro: Perfil > Aparência > Tema. **Navegue pelas abas e botões do app** (recarregar a página recomeça a demonstração e encerra o trajeto).
+Roteiro sugerido: Permissões → Configurar o relógio → Início → Mapa → Entrar (Preencher) → Comparar rotas → Iniciar trajeto → esperar o aviso e o alerta → Mapa com o trajeto → Histórico → Perfil → Contatos → Pedir ajuda. Para o tema escuro: Perfil > Aparência > Tema. **Navegue pelas abas e botões do app** (recarregar a página recomeça a demonstração e encerra o trajeto).
 
 Fora do modo demonstração nada disso existe: o app usa a API, o GPS e o Bluetooth de verdade.
 

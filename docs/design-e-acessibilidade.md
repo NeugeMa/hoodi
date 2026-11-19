@@ -37,8 +37,8 @@ No navegador, no [modo demonstração](../README.md#3-modo-demonstração-no-nav
 | <img src="prints/mapa-com-trajeto.png" width="180" alt="Mapa com o trajeto" /> | <img src="prints/alerta-risco-medio.png" width="180" alt="Alerta de risco médio" /> | <img src="prints/pedir-ajuda.png" width="180" alt="Pedir ajuda" /> | <img src="prints/pedido-registrado.png" width="180" alt="Pedido registrado" /> |
 | **Entrar** | **Criar conta** | **Contatos** | **Perfil** |
 | <img src="prints/entrar.png" width="180" alt="Entrar" /> | <img src="prints/criar-conta.png" width="180" alt="Criar conta" /> | <img src="prints/contatos.png" width="180" alt="Contatos de segurança" /> | <img src="prints/perfil.png" width="180" alt="Perfil" /> |
-| **Abertura** | **Permissões** | **Relógio** | **Dados e privacidade** |
-| <img src="prints/intro.png" width="180" alt="Abertura animada com a logo e o nome Hoodi" /> | <img src="prints/permissoes.png" width="180" alt="Permissões" /> | <img src="prints/relogio.png" width="180" alt="Configurar o relógio" /> | <img src="prints/privacidade.png" width="180" alt="Dados e privacidade" /> |
+| **Abertura** | **Permissões** | **Relógio** | |
+| <img src="prints/intro.png" width="180" alt="Abertura animada com a logo e o nome Hoodi" /> | <img src="prints/permissoes.png" width="180" alt="Permissões" /> | <img src="prints/relogio.png" width="180" alt="Configurar o relógio" /> |  |
 
 
 ## Ícone e splash

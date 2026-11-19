@@ -128,13 +128,13 @@ Em desenvolvimento, **o e-mail de confirmação não chega no Gmail**: ele apare
 
 ### 3. Modo demonstração no navegador
 
-Para o vídeo e os prints, sem API, GPS ou Bluetooth, com **dados simulados** e o selo "Demonstração · dados simulados" na tela:
+Para os prints, sem API, GPS ou Bluetooth, com **dados simulados** e o selo "Demonstração · dados simulados" na tela:
 
 ```bash
 npx expo start --web --port 8081
 ```
 
-Abra **http://localhost:8081/?demo=1** e entre com a conta de teste. Roteiro e conta em [Para avaliar](#para-avaliar); detalhes técnicos em [docs/integracoes.md](docs/integracoes.md#modo-demonstração-no-navegador-vídeo-e-prints).
+Abra **http://localhost:8081/?demo=1** e entre com a conta de teste. Roteiro e conta em [Para avaliar](#para-avaliar); detalhes técnicos em [docs/integracoes.md](docs/integracoes.md#modo-demonstração-no-navegador).
 
 Segue o modelo da API: os contatos são **outras contas do hoodi**, ligadas por convite (não há SMS). Quem aceita o convite passa a receber os pedidos de ajuda de quem convidou.
 
