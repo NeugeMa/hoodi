@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { AvisoRisco } from '@/components/alerta/aviso-risco';
 import { MolduraDemo } from '@/components/demo/selo-demo';
 import { IntroAnimada } from '@/components/intro/intro-animada';
+import { MolduraTela } from '@/components/layout/moldura-tela';
 import { usePedidoPeloPet } from '@/features/ajuda/pedido-pelo-pet';
 import { usePushPedidosAjuda } from '@/features/ajuda/push';
 import { AcompanhamentoProvider } from '@/features/alerta/acompanhamento-context';
@@ -53,12 +54,15 @@ export default function RootLayout() {
               <ContatosProvider>
                 <PetProvider>
                   <AcompanhamentoProvider>
-                    {/* Modo demonstração (?demo=1): faixa com o selo de dados simulados em toda tela. */}
-                    <MolduraDemo>
-                      <Navegacao />
-                      {/* Alerta de risco por cima de qualquer tela (F07). */}
-                      <AvisoRisco />
-                    </MolduraDemo>
+                    {/* No navegador do computador, o app fica numa coluna do tamanho de um celular. */}
+                    <MolduraTela>
+                      {/* Modo demonstração (?demo=1): faixa com o selo de dados simulados em toda tela. */}
+                      <MolduraDemo>
+                        <Navegacao />
+                        {/* Alerta de risco por cima de qualquer tela (F07). */}
+                        <AvisoRisco />
+                      </MolduraDemo>
+                    </MolduraTela>
                   </AcompanhamentoProvider>
                 </PetProvider>
               </ContatosProvider>

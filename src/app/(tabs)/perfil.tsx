@@ -24,6 +24,9 @@ import { Texto } from '@/components/ui/texto';
 import { perguntar } from '@/components/ui/perguntar';
 import { useConta } from '@/features/conta/conta-context';
 import { useContatos } from '@/features/contatos/contatos-context';
+import { CONTA_DEMO } from '@/features/demo/api-demo';
+import { semearHistoricoDemo } from '@/features/demo/historico-demo';
+import { MODO_DEMO } from '@/features/demo/modo-demo';
 import { usePet } from '@/features/pet/pet-context';
 import {
   OPCOES_ANTECEDENCIA,
@@ -45,13 +48,31 @@ type Escolha = 'antecedencia' | 'horario' | 'tema' | null;
 export default function PerfilScreen() {
   const { cores } = useTema();
   const insets = useSafeAreaInsets();
-  const { usuario, estado, sair } = useConta();
+  const { usuario, estado, entrar, sair } = useConta();
   const { meusContatos } = useContatos();
   const { canais } = useTrajeto();
   const { pareado, conectado } = usePet();
-  const { alertas, mudarAlertas, consentimentoEm, tema, mudarTema } = usePreferencias();
+  const { alertas, mudarAlertas, consentimentoEm, darConsentimento, tema, mudarTema } = usePreferencias();
   const [escolha, setEscolha] = useState<Escolha>(null);
+  const [entrandoDemo, setEntrandoDemo] = useState(false);
   const logado = estado === 'logado';
+
+  /**
+   * Só no modo demonstração: entra direto na conta de teste, com os alertas ligados (o consentimento da
+   * conta de exemplo) e o Histórico com exemplos. Dá para revogar em Dados e privacidade, como no app.
+   */
+  async function entrarComPerfilDemo() {
+    setEntrandoDemo(true);
+    try {
+      if (!consentimentoEm) await darConsentimento();
+      await semearHistoricoDemo();
+      await entrar(CONTA_DEMO.email, CONTA_DEMO.senha);
+    } catch {
+      router.push('/entrar');
+    } finally {
+      setEntrandoDemo(false);
+    }
+  }
 
   function confirmarSair() {
     // Ações que desligam algo sempre pedem confirmação (design system v3).
@@ -99,7 +120,20 @@ export default function PerfilScreen() {
               </Texto>
               <Texto variante="legenda">O mapa, o Início e o Hoodi Pet funcionam sem conta.</Texto>
             </View>
-            <Botao rotulo="Entrar" onPress={() => router.push('/entrar')} />
+            {MODO_DEMO ? (
+              <Botao
+                rotulo={entrandoDemo ? 'Entrando…' : 'Perfil demo'}
+                icone={User}
+                dica="Entra na conta de demonstração, com contatos e histórico de exemplo"
+                desabilitado={entrandoDemo}
+                onPress={entrarComPerfilDemo}
+              />
+            ) : null}
+            <Botao
+              rotulo="Entrar"
+              variante={MODO_DEMO ? 'secundario' : 'primario'}
+              onPress={() => router.push('/entrar')}
+            />
             <View style={styles.criar}>
               <Texto variante="legenda">Ainda não tem conta?</Texto>
               <LinkTexto rotulo="Criar conta" onPress={() => router.push('/criar-conta')} />
