@@ -81,6 +81,14 @@
 
 Dá para usar o app inteiro **sem API, GPS nem Bluetooth**, com **dados simulados** e o selo **"Demonstração · dados simulados"** sempre na tela.
 
+### Online (Vercel)
+
+A demonstração também fica publicada como site, para abrir direto pelo navegador do celular ou do computador, sem instalar nada. O [`vercel.json`](vercel.json) gera a versão web (`npx expo export -p web`) já com o modo demonstração ligado (`EXPO_PUBLIC_AMBIENTE=demo` e `EXPO_PUBLIC_DEMO=1`, só no build do site) e sem ler o `.env`. O app do celular, o Expo Go e os builds do EAS não mudam.
+
+No site, o Mapa aparece como desenho esquemático (sem ruas), e o Hoodi Pet, o push e o GPS de verdade ficam só no app do celular.
+
+### No PC
+
 ```bash
 npm install
 npx expo start --web --port 8081
@@ -98,7 +106,7 @@ Na tela **Entrar**, o botão **Preencher** coloca os dois.
 **Roteiro sugerido (cerca de 2 minutos):**
 
 1. Abra o app: a abertura mostra a logo e o nome Hoodi, e o Início aparece com o Pet **dormindo** (ainda sem conta).
-2. Em **Perfil > Entrar**, toque em **Preencher** e depois em **Entrar**.
+2. Em **Perfil**, toque em **Perfil demo**: entra direto na conta de teste, com contatos de exemplo e alguns alertas no **Histórico**. (Ou, em **Entrar**, toque em **Preencher** e depois em **Entrar**.)
 3. No Início, toque em **Comparar rotas**, escreva um destino (por exemplo, "Estação Liberdade do Metrô") e toque em **Comparar rotas**.
 4. Toque em **Iniciar trajeto**: a posição anda sozinha pela rota, chega o aviso antecipado e depois o alerta de risco.
 5. Veja o **Mapa** com o trajeto e o **Histórico** com os alertas recebidos.
@@ -124,7 +132,7 @@ O app conversa com a API pelo endereço em `EXPO_PUBLIC_API_URL`, no arquivo `.e
 |---|---|---|
 | **A. API na VM** (recomendado) | Testar com conta de verdade, contatos e push, sem subir nada no PC | Só o app |
 | **B. API no próprio PC** | Desenvolver ou testar mudanças na API | .NET 10, Mailpit e o repositório da API |
-| **C. Modo demonstração** | Ver o app sem API | Nada: veja [Para avaliar](#para-avaliar-modo-demonstração) |
+| **C. Modo demonstração** | Ver o app sem API | Nada: veja [Demonstração](#demonstração) |
 
 ### A. Com a API na VM (Azure)
 

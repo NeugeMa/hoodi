@@ -28,7 +28,7 @@ Regras visuais combinadas pela equipe (além do v3):
 
 ## Prints
 
-No navegador, no [modo demonstração](../README.md#para-avaliar-modo-demonstração) (dados simulados), em tamanho de celular.
+No navegador, no [modo demonstração](../README.md#demonstração) (dados simulados), em tamanho de celular.
 
 | Início | Mapa | Comparar rotas | Em trajeto |
 |:-:|:-:|:-:|:-:|
